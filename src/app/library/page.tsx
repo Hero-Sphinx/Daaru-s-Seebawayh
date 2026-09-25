@@ -1,6 +1,6 @@
 import { LibraryWrapper } from "@/libs";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { getLibraryPage } from "@/server/services/library/getLibraryPage";
+import { getCurrentUserId } from "@/server/lib";
+import { getLibraryPage } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

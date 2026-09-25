@@ -6,13 +6,13 @@
  * call. See README.md's AI usage policy.
  */
 
-import type { RoleCode } from "@/types/irab";
-import { GRAMMATICAL_ROLES } from "@/constants/data/grammaticalRoles";
-import { buildOptions } from "@/helpers/quiz/primitives";
-import { tokenizeSentence } from "@/helpers/irab/tokenize";
-import { isHarfJarr } from "@/helpers/irab/particles";
-import { isArabicWord, isMostlyArabic } from "@/helpers/arabic/script";
-import { parseFreeText, type RawCandidate, type TokenInput } from "@/helpers/irab/freeTextParser";
+import { GRAMMATICAL_ROLES } from "@/constants";
+import type { RoleCode } from "@/types";
+import { isArabicWord, isMostlyArabic } from "../arabic/script";
+import { parseFreeText, type RawCandidate, type TokenInput } from "../irab/freeTextParser";
+import { isHarfJarr } from "../irab/particles";
+import { tokenizeSentence } from "../irab/tokenize";
+import { buildOptions } from "./primitives";
 
 export interface BookQuizQuestion {
   subtype: "fawaid_recall" | "irab_excerpt";

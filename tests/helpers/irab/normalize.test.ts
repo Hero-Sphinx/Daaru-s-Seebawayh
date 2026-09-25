@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { candidateMatchesSurface, diacriticsMatch } from "@/helpers/irab/normalize";
+import { candidateMatchesSurface, diacriticsMatch } from "@/helpers";
 
 describe("diacriticsMatch", () => {
   it("matches the sun-letter assimilation shadda against CAMeL's unmarked convention", () => {

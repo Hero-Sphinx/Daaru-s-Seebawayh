@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { generateQuizQuestions, type QuizQuestion } from "@/helpers/quiz/generate";
-import QuizPlayer, { type PlayableQuestion } from "@/components/QuizPlayer";
-import { BookIcon, DiagramIcon, LightbulbIcon, PlayIcon, QuizIcon, ScrollIcon, SlidersIcon, type IconProps } from "@/components/Icons";
 import type { ComponentType } from "react";
+import { BookIcon, DiagramIcon, type IconProps, LightbulbIcon, type PlayableQuestion, PlayIcon, QuizIcon, QuizPlayer, ScrollIcon, SlidersIcon } from "@/components";
+import { generateQuizQuestions, type QuizQuestion } from "@/helpers";
 
 type Topic = "vocab" | "vocab_sarf" | "irab" | "sarf" | "mixed" | "meaning";
 type Difficulty = "beginner" | "intermediate" | "advanced";

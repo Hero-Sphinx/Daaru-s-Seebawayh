@@ -1,6 +1,6 @@
 import { VocabularyWrapper } from "@/libs";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { getVocabularyPage } from "@/server/services/vocabulary/getVocabularyPage";
+import { getCurrentUserId } from "@/server/lib";
+import { getVocabularyPage } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractSnippet } from "@/server/services/library/snippet";
+import { extractSnippet } from "@/server/services";
 
 describe("extractSnippet", () => {
   it("returns null when the query isn't found", () => {

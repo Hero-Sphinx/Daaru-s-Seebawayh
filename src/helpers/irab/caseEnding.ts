@@ -1,4 +1,4 @@
-import type { CaseSign, CaseType } from "@/types/irab";
+import type { CaseSign, CaseType } from "@/types";
 import { stripDiacritics } from "./particles";
 
 /**

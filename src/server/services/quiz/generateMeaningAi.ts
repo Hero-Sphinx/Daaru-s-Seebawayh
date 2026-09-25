@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Gemini-generated sentence-meaning-matching questions for the Quiz
  * Center's "meaning" topic — fresh sentences each time, not capped at the
@@ -13,9 +14,9 @@
  * produces is labeled AI-generated in the UI.
  */
 
-import { generateStructured, GeminiNotConfiguredError } from "@/server/helpers/geminiClient";
-import { buildOptions } from "@/helpers/quiz/primitives";
-import type { QuizQuestion } from "@/helpers/quiz/generate";
+import { buildOptions } from "@/helpers";
+import type { QuizQuestion } from "@/helpers";
+import { GeminiNotConfiguredError, generateStructured } from "@/server/helpers";
 
 const GENERATE_SCHEMA = {
   type: "object",

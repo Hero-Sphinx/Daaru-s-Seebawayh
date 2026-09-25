@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildIrabSentence } from "@/helpers/irab/irabSentence";
-import { GRAMMATICAL_ROLES, CASE_SIGNS } from "@/constants/data/grammaticalRoles";
-import type { IrabToken } from "@/types/irab";
+import { CASE_SIGNS, GRAMMATICAL_ROLES } from "@/constants";
+import { buildIrabSentence } from "@/helpers";
+import type { IrabToken } from "@/types";
 
 describe("buildIrabSentence", () => {
   it("renders the traditional formula for a rafa/damma subject (Fa'il)", () => {

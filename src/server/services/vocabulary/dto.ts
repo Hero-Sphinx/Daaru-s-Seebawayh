@@ -1,5 +1,6 @@
-import { SM2_DEFAULTS } from "@/helpers/srs/sm2";
-import type { VocabularyCardDTO } from "@/types/vocabulary";
+import "server-only";
+import { SM2_DEFAULTS } from "@/helpers";
+import type { VocabularyCardDTO } from "@/types";
 
 /** Prisma include every vocabulary query uses, so rows always fit toVocabularyCardDTO. */
 export const VOCAB_QUERY_INCLUDE = {

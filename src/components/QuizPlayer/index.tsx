@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckIcon, XIcon } from "@/components/Icons";
-import { nowMs } from "@/helpers/time";
+import { nowMs } from "@/helpers";
+import { CheckIcon, XIcon } from "../Icons";
 
 export interface PlayableQuestion {
   id: string | number;

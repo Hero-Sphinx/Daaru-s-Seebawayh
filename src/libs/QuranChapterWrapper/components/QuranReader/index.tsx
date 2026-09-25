@@ -1,12 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import MobileSheet from "@/components/MobileSheet";
-import { PlayIcon, VolumeIcon } from "@/components/Icons";
-import { playClip, playSequence, stopAudio } from "@/helpers/audio/player";
-import { QURAN_AUDIO_ATTRIBUTION, wordAudioUrl } from "@/helpers/quran/audio";
-import { describeWord, wordTone } from "@/helpers/quran/labels";
-import type { QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types/quran";
+import { MobileSheet, PlayIcon, VolumeIcon } from "@/components";
+import { describeWord, playClip, playSequence, QURAN_AUDIO_ATTRIBUTION, stopAudio, wordAudioUrl, wordTone } from "@/helpers";
+import type { QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
 
 const TONE_CLASS: Record<ReturnType<typeof wordTone>, string> = {
   nominative: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200",

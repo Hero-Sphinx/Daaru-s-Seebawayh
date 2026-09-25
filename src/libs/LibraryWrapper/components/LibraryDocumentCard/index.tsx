@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { LibraryDocumentDTO } from "@/types/library";
-import { ScrollIcon, TrashIcon } from "@/components/Icons";
+import { useState } from "react";
+import { ScrollIcon, TrashIcon } from "@/components";
+import type { LibraryDocumentDTO } from "@/types";
 
 const STATUS: Record<string, { label: string; pill: string; dot: string }> = {
   completed: { label: "Ready", pill: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200", dot: "bg-emerald-500" },

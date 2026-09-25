@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense, use, useState } from "react";
-import QuizPlayer, { type PlayableQuestion } from "@/components/QuizPlayer";
-import { PlayIcon, SlidersIcon } from "@/components/Icons";
+import { type PlayableQuestion, PlayIcon, QuizPlayer, SlidersIcon } from "@/components";
 
 interface BookQuizQuestionDTO {
   id: number;

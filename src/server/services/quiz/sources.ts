@@ -1,17 +1,14 @@
-import db from "@/server/databases/db";
-import { QADT_POS_TAGS } from "@/helpers/quran/tagset";
-import { ASPECT_LABELS, CASE_LABELS, posLabel, verbFormLabel } from "@/helpers/quiz/answerLabels";
-import type { DistractorContext } from "@/helpers/quiz/templateEngine";
-import type { QuizItem } from "@/helpers/quiz/templateTypes";
+import "server-only";
+import type { Difficulty } from "@/constants";
+import { ASPECT_LABELS, CASE_LABELS, posLabel, QADT_POS_TAGS, verbFormLabel } from "@/helpers";
+import type { DistractorContext, QuizItem } from "@/helpers";
+import { db } from "@/server/databases";
 
 /**
  * Server-side loaders turning DB rows into template-engine QuizItems.
  * Everything here is verified data: Qur'an items come from the imported
  * QADT annotation, vocabulary items from the learner's own bank.
  */
-
-export const DIFFICULTIES = ["beginner", "intermediate", "advanced"] as const;
-export type Difficulty = (typeof DIFFICULTIES)[number];
 
 /**
  * Difficulty = how common the word's lemma is in the Qur'an

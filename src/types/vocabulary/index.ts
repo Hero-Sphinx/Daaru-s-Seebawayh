@@ -1,4 +1,4 @@
-import type { Sm2State } from "@/helpers/srs/sm2";
+import type { Sm2State } from "@/helpers";
 
 /** One morphological reading of a word (CAMeL Tools; see services/camel/app.py). */
 export interface MorphCandidate {

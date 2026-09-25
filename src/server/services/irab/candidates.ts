@@ -1,7 +1,7 @@
-import { analyzeWord } from "@/server/helpers/camelClient";
-import { withQuranicCorpusFallback } from "@/server/services/irab/quranicCorpus";
-import type { RawCandidate } from "@/helpers/irab/morph";
-import { candidateMatchesSurface } from "@/helpers/irab/normalize";
+import { candidateMatchesSurface } from "@/helpers";
+import type { RawCandidate } from "@/helpers";
+import { analyzeWord } from "@/server/helpers";
+import { withQuranicCorpusFallback } from "./quranicCorpus";
 
 /**
  * Every morphological candidate the grammar should consider for one typed

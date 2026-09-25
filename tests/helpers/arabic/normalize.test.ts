@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeArabicForSearch, normalizeWithMap, snippetAround } from "@/helpers/arabic/normalize";
+import { normalizeArabicForSearch, normalizeWithMap, snippetAround } from "@/helpers";
 
 describe("normalizeArabicForSearch", () => {
   it("strips harakat, shadda, dagger alif, Qur'anic marks and tatweel", () => {

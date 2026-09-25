@@ -1,5 +1,6 @@
+import "server-only";
 import type { library_documents } from "@/generated/prisma/client";
-import type { LibraryDocumentDTO } from "@/types/library";
+import type { LibraryDocumentDTO } from "@/types";
 
 export type LibraryDocumentRow = Pick<
   library_documents,

@@ -27,11 +27,11 @@
  *      vowel of weak-final verbs in some persons, diptotes in jarr).
  */
 
-import type { CaseSign, CaseType, RoleCode } from "@/types/irab";
-import { CASE_SIGNS, GRAMMATICAL_ROLES } from "@/constants/data/grammaticalRoles";
-import { candidateMatchesSurface } from "./normalize";
+import { CASE_SIGNS, GRAMMATICAL_ROLES } from "@/constants";
+import type { CaseSign, CaseType, RoleCode } from "@/types";
 import { caseSignFor, diptoteReason, finalMark, formDefiniteness, nounEnding, type EndingInfo } from "./caseEnding";
 import { splitTyped, toReading, type RawCandidate, type Reading } from "./morph";
+import { candidateMatchesSurface } from "./normalize";
 import {
   BUILT_ON,
   demonstrative,

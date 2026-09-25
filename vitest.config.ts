@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        // The real package throws outside a React Server Component graph.
+        "server-only": path.resolve(__dirname, "./tests/stubs/server-only.ts"),
       },
     },
     test: {

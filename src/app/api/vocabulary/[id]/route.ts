@@ -1,20 +1,8 @@
-import { NextResponse } from "next/server";
-import db from "@/server/databases/db";
-import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { noContent, parseWith, withAuth } from "@/server/lib";
+import { deleteVocabulary } from "@/server/services";
+import { vocabularyIdSchema } from "@/server/validators/vocabulary/validate";
 
-export async function DELETE(_request: Request, ctx: RouteContext<"/api/vocabulary/[id]">) {
-  const { id } = await ctx.params;
-  if (!/^\d+$/.test(id)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
-  const userId = await getApiUserId();
-  if (!userId) return unauthorizedResponse();
-
-  const result = await db.vocabulary_items.deleteMany({
-    where: { id: BigInt(id), user_id: userId },
-  });
-  if (result.count === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  return new NextResponse(null, { status: 204 });
-}
+export const DELETE = withAuth<{ id: string }>(async ({ userId, params }) => {
+  await deleteVocabulary(userId, parseWith(vocabularyIdSchema, params.id));
+  return noContent();
+});

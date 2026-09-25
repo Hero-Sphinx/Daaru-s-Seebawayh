@@ -1,6 +1,7 @@
-import { nowMs } from "@/helpers/time";
-import db from "@/server/databases/db";
-import type { AnnotationDTO, LibraryDocumentPageData } from "@/types/library";
+import "server-only";
+import { nowMs } from "@/helpers";
+import { db } from "@/server/databases";
+import type { AnnotationDTO, LibraryDocumentPageData } from "@/types";
 import { getDocumentRole, isUuid } from "./access";
 import { toLibraryDocumentDTO } from "./dto";
 

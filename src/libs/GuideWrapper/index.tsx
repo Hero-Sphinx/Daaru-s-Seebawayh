@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
-import { BookIcon, DiagramIcon, LightbulbIcon, MushafIcon, QuizIcon, ScrollIcon, type IconProps } from "@/components/Icons";
+import { BookIcon, DiagramIcon, type IconProps, LightbulbIcon, MushafIcon, QuizIcon, ScrollIcon } from "@/components";
 
 const CARD = "rounded-2xl border border-border bg-surface p-5 shadow-sm";
 

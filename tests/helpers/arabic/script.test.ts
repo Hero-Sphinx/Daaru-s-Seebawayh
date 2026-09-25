@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isArabicWord, isMostlyArabic } from "@/helpers/arabic/script";
+import { isArabicWord, isMostlyArabic } from "@/helpers";
 
 describe("isArabicWord", () => {
   it("recognizes Arabic words, diacritized or not", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCorpus, parseCorpusLine } from "@/helpers/quran/corpusParser";
+import { parseCorpus, parseCorpusLine } from "@/helpers";
 
 // Verbatim lines from quranic-corpus-morphology-0.4.txt.
 const FATIHA_7_EXCERPT = [

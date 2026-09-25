@@ -1,10 +1,10 @@
-import { createHash, randomBytes } from "node:crypto";
-import { cache } from "react";
+import "server-only";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { NextResponse } from "next/server";
-import db from "@/server/databases/db";
-import { SESSION_COOKIE } from "@/constants/auth";
+import { createHash, randomBytes } from "node:crypto";
+import { cache } from "react";
+import { SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "@/constants";
+import { db } from "@/server/databases";
 
 /**
  * Server-side session auth (ROADMAP.md Phase 1). The session cookie holds a
@@ -19,7 +19,6 @@ import { SESSION_COOKIE } from "@/constants/auth";
  *   run by every page and route handler that touches user data.
  */
 
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Only push expires_at forward when less than this remains — avoids a DB write on every request. */
 const SESSION_REFRESH_THRESHOLD_MS = 15 * 24 * 60 * 60 * 1000;
 
@@ -34,13 +33,7 @@ function hashToken(token: string): string {
 }
 
 async function setSessionCookie(token: string, expiresAt: Date) {
-  (await cookies()).set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
+  (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
 }
 
 export async function createSession(userId: string): Promise<void> {
@@ -86,10 +79,9 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     return null;
   }
   if (session.expires_at.getTime() - now < SESSION_REFRESH_THRESHOLD_MS) {
-    // Sliding expiry. Only the DB row is extended here: cookies can't be set
-    // while rendering a server component, and the cookie's own expiry is
-    // just a browser hint — the DB row is what's actually enforced. The
-    // cookie is re-issued at the next login.
+    // Sliding expiry. Only the DB row can be extended here (cookies can't be
+    // set while rendering a server component); src/proxy.ts keeps the
+    // cookie itself sliding along with it.
     await db.sessions.update({ where: { id: session.id }, data: { expires_at: new Date(now + SESSION_TTL_MS) } });
   }
 
@@ -104,15 +96,11 @@ export async function getCurrentUserId(): Promise<string> {
 }
 
 /**
- * For route handlers: the signed-in user's id, or null — pair with
- * unauthorizedResponse(). Deliberately not a redirect: API callers are
+ * For route handlers: the signed-in user's id, or null (see withAuth in
+ * server/lib/handler.ts). Deliberately not a redirect: API callers are
  * fetch() calls expecting JSON, and a 307 to the login page's HTML would
  * surface as a confusing JSON parse error instead of a clear 401.
  */
 export async function getApiUserId(): Promise<string | null> {
   return (await getSessionUser())?.id ?? null;
-}
-
-export function unauthorizedResponse() {
-  return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 }

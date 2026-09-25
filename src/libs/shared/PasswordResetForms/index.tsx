@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import type { ResetPasswordState, ResetRequestState } from "@/types/auth";
-import { MIN_PASSWORD_LENGTH } from "@/constants/passwordPolicy";
+import { MIN_PASSWORD_LENGTH } from "@/constants";
+import type { ResetPasswordState, ResetRequestState } from "@/types";
 import { AUTH_BUTTON, AUTH_CARD, AUTH_INPUT } from "../authStyles";
 
 function ErrorNote({ message }: { message?: string }) {

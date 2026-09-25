@@ -1,6 +1,6 @@
 import Link from "next/link";
-import type { QuranChapterDTO, QuranVerseDTO } from "@/types/quran";
-import QuranReader from "./components/QuranReader";
+import type { QuranChapterDTO, QuranVerseDTO } from "@/types";
+import { QuranReader } from "./components";
 
 export interface QuranChapterWrapperProps {
   chapter: QuranChapterDTO;

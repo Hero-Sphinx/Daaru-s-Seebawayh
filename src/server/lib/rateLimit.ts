@@ -1,5 +1,6 @@
+import "server-only";
 import { headers } from "next/headers";
-import db from "@/server/databases/db";
+import { db } from "@/server/databases";
 
 /**
  * Database-backed rate limiting for sign-in and password-reset requests —

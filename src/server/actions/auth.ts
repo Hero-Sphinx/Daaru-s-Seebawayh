@@ -1,14 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import db from "@/server/databases/db";
-import { createSession, destroySession } from "@/server/lib/auth";
-import { EmailNotConfiguredError } from "@/server/lib/email";
-import { hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from "@/server/lib/password";
-import { completeReset, findResetToken, sendResetLink } from "@/server/services/auth/passwordReset";
-import { clearAttempts, clientIp, recordAttempt, retryAfterMinutes } from "@/server/lib/rateLimit";
-import { safeNextPath } from "@/constants/safeRedirect";
-import type { AuthFormState, ResetPasswordState, ResetRequestState } from "@/types/auth";
+import { MAX_DISPLAY_NAME_LENGTH, MAX_PASSWORD_LENGTH, safeNextPath } from "@/constants";
+import { Prisma } from "@/generated/prisma/client";
+import { db } from "@/server/databases";
+import { clearAttempts, clientIp, createSession, destroySession, EmailNotConfiguredError, hashPassword, MIN_PASSWORD_LENGTH, recordAttempt, retryAfterMinutes, verifyPassword } from "@/server/lib";
+import { completeReset, findResetToken, sendResetLink } from "@/server/services";
+import type { AuthFormState, ResetPasswordState, ResetRequestState } from "@/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,18 +20,27 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   const displayName = readField(formData, "displayName");
   const password = formData.get("password");
 
-  if (!EMAIL_RE.test(email)) return { error: "Enter a valid email address.", email, displayName };
+  if (!EMAIL_RE.test(email) || email.length > 254) return { error: "Enter a valid email address.", email, displayName };
+  if (displayName.length > MAX_DISPLAY_NAME_LENGTH) return { error: `Please keep your name under ${MAX_DISPLAY_NAME_LENGTH} characters.`, email, displayName };
   if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
     return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`, email, displayName };
   }
+  if (password.length > MAX_PASSWORD_LENGTH) return { error: `Passwords can be at most ${MAX_PASSWORD_LENGTH} characters.`, email, displayName };
 
-  const existing = await db.users.findUnique({ where: { email }, select: { id: true } });
-  if (existing) return { error: "An account with that email already exists — sign in instead.", email, displayName };
+  const taken = { error: "An account with that email already exists — sign in instead.", email, displayName };
+  if (await db.users.findUnique({ where: { email }, select: { id: true } })) return taken;
 
-  const user = await db.users.create({
-    data: { email, display_name: displayName || null, password_hash: await hashPassword(password) },
-    select: { id: true },
-  });
+  let user: { id: string };
+  try {
+    user = await db.users.create({
+      data: { email, display_name: displayName || null, password_hash: await hashPassword(password) },
+      select: { id: true },
+    });
+  } catch (err) {
+    // Two sign-ups with the same email at once: the unique index catches the second.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return taken;
+    throw err;
+  }
   await createSession(user.id);
   redirect(safeNextPath(formData.get("next")));
 }
@@ -45,7 +52,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
   // can't be used to discover which emails have accounts.
   const invalid = { error: "Incorrect email or password.", email };
 
-  if (!email || typeof password !== "string" || !password) return invalid;
+  if (!email || typeof password !== "string" || !password || password.length > MAX_PASSWORD_LENGTH) return invalid;
   const ip = await clientIp();
   const wait = await retryAfterMinutes("login", email, ip);
   if (wait > 0) {
@@ -88,6 +95,7 @@ export async function resetPassword(_prev: ResetPasswordState, formData: FormDat
   const password = formData.get("password");
   const confirm = formData.get("confirm");
   if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
+  if (password.length > MAX_PASSWORD_LENGTH) return { error: `Passwords can be at most ${MAX_PASSWORD_LENGTH} characters.` };
   if (password !== confirm) return { error: "The two passwords don't match." };
 
   const record = await findResetToken(token);

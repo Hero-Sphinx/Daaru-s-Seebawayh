@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rangesOverlap, resolveAnnotationRange } from "@/helpers/library/annotations";
+import { rangesOverlap, resolveAnnotationRange } from "@/helpers";
 
 const TEXT = "قال رسول الله: إنما الأعمال بالنيات";
 

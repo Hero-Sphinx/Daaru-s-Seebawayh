@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { LEITNER_INTERVALS_DAYS } from "@/helpers";
 import { updateSrsAlgorithm } from "@/server/actions/settings";
-import type { SettingsState } from "@/types/settings";
-import { LEITNER_INTERVALS_DAYS } from "@/helpers/srs/leitner";
+import type { SettingsState } from "@/types";
 
 const OPTIONS = [
   {

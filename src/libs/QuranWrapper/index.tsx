@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { MushafIcon } from "@/components/Icons";
-import PageBanner from "@/layouts/PageBanner";
-import type { QuranChapterDTO } from "@/types/quran";
+import { MushafIcon } from "@/components";
+import { PageBanner } from "@/layouts";
+import type { QuranChapterDTO } from "@/types";
 
 export default function QuranWrapper({ chapters }: { chapters: QuranChapterDTO[] }) {
   return (

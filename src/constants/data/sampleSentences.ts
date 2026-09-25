@@ -1,5 +1,5 @@
-import type { SentenceAnalysis } from "@/types/irab";
-import { CASE_SIGNS, GRAMMATICAL_ROLES } from "@/constants/data/grammaticalRoles";
+import type { SentenceAnalysis } from "@/types";
+import { CASE_SIGNS, GRAMMATICAL_ROLES } from "./grammaticalRoles";
 
 /**
  * Curated worked examples for the I'rab Workspace's sentence picker. Each one

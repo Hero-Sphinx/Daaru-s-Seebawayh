@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { lookupQuranicCorpus, withQuranicCorpusFallback } from "@/server/services/irab/quranicCorpus";
+import type { RawCandidate } from "@/helpers";
 import quranicCorpusWords from "@/server/data/quranicCorpusWords.json";
-import type { RawCandidate } from "@/helpers/irab/freeTextParser";
+import { lookupQuranicCorpus, withQuranicCorpusFallback } from "@/server/services";
 
 // Arabic combining diacritics only (tanwin, harakat, shadda, sukun, dagger
 // alef) — deliberately NOT a wider range, since the main Arabic letters

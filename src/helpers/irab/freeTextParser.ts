@@ -7,9 +7,9 @@
  * (the preposition بِ and its object القَلَمِ), كِتَابُهُ becomes كِتَابُ + ـهُ.
  */
 
-import type { CaseSign, CaseType, RoleCode, SentenceAnalysis } from "@/types/irab";
-import { CASE_SIGNS, GRAMMATICAL_ROLES } from "@/constants/data/grammaticalRoles";
-import type { CoarsePos } from "@/helpers/irab/classify";
+import { CASE_SIGNS, GRAMMATICAL_ROLES } from "@/constants";
+import type { CaseSign, CaseType, RoleCode, SentenceAnalysis } from "@/types";
+import type { CoarsePos } from "./classify";
 import { parseSentence, type Seg, type TokenInput } from "./grammar";
 import type { AnalysisSourceTag, RawCandidate } from "./morph";
 

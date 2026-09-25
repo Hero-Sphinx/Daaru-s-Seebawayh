@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { SentenceAnalysis } from "@/types/irab";
-import IrabWorkspace from "@/libs/IrabWrapper/components/IrabWorkspace";
+import type { SentenceAnalysis } from "@/types";
+import IrabWorkspace from "../IrabWorkspace";
 
 interface ParseResponse {
   sentence: SentenceAnalysis;

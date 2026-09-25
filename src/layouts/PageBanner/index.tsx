@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
-import type { IconProps } from "@/components/Icons";
+import type { IconProps } from "@/components";
 
 /**
  * The header of each section page — a soft tinted band in the section's own

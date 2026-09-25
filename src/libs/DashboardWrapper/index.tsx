@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { AwardIcon, BookIcon, DiagramIcon, GraduationCapIcon, MushafIcon, QuizIcon, ScrollIcon } from "@/components/Icons";
 import type { ComponentType } from "react";
-import type { IconProps } from "@/components/Icons";
-import type { DashboardData } from "@/types/dashboard";
-import WisdomCard from "./components/WisdomCard";
+import { AwardIcon, BookIcon, DiagramIcon, GraduationCapIcon, MushafIcon, QuizIcon, ScrollIcon } from "@/components";
+import type { IconProps } from "@/components";
+import type { DashboardData } from "@/types";
+import { WisdomCard } from "./components";
 
 const PANEL = "rounded-lg border border-border bg-surface";
 

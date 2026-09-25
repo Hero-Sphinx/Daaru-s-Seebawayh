@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeNextPath } from "@/constants/safeRedirect";
+import { safeNextPath } from "@/constants";
 
 describe("safeNextPath", () => {
   it("keeps same-origin paths, including query strings", () => {

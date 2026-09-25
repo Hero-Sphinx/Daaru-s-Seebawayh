@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRootFormIndex, findRootMatches, parseRootInput, peelPrefixes, spellingVariants, wordMatchesRoot } from "@/server/services/library/rootSearch";
+import { buildRootFormIndex, findRootMatches, parseRootInput, peelPrefixes, spellingVariants, wordMatchesRoot } from "@/server/services";
 
 // Real Uthmani surfaces of ك ت ب words / stems from the imported corpus.
 const index = buildRootFormIndex(

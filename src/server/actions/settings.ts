@@ -1,17 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import db from "@/server/databases/db";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { LEITNER_INTERVALS_DAYS } from "@/helpers/srs/leitner";
-import type { SettingsState } from "@/types/settings";
+import { MAX_DISPLAY_NAME_LENGTH } from "@/constants";
+import { LEITNER_INTERVALS_DAYS } from "@/helpers";
+import { db } from "@/server/databases";
+import { getCurrentUserId } from "@/server/lib";
+import type { SettingsState } from "@/types";
 
 /** The name used on the dashboard and in emails. Empty clears it. */
 export async function updateDisplayName(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
   const userId = await getCurrentUserId();
   const raw = formData.get("displayName");
   const name = typeof raw === "string" ? raw.trim().replace(/\s+/g, " ") : "";
-  if (name.length > 60) return { error: "Please keep your name under 60 characters." };
+  if (name.length > MAX_DISPLAY_NAME_LENGTH) return { error: `Please keep your name under ${MAX_DISPLAY_NAME_LENGTH} characters.` };
   await db.users.update({ where: { id: userId }, data: { display_name: name || null } });
   revalidatePath("/", "layout");
   return { message: name ? `Saved — we'll call you ${name}.` : "Name cleared." };

@@ -1,6 +1,6 @@
-import { QuizIcon } from "@/components/Icons";
-import PageBanner from "@/layouts/PageBanner";
-import QuizCenter from "./components/QuizCenter";
+import { QuizIcon } from "@/components";
+import { PageBanner } from "@/layouts";
+import { QuizCenter } from "./components";
 
 export default function QuizzesWrapper() {
   return (

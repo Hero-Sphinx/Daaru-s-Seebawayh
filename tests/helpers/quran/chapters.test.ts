@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAPTERS } from "@/helpers/quran/chapters";
+import { CHAPTERS } from "@/helpers";
 
 describe("chapter metadata", () => {
   it("has exactly 114 surahs numbered 1..114 with no duplicate names", () => {

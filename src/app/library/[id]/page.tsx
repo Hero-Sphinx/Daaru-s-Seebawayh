@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { LibraryDocumentWrapper } from "@/libs";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { getLibraryDocumentPage } from "@/server/services/library/getLibraryDocumentPage";
+import { getCurrentUserId } from "@/server/lib";
+import { getLibraryDocumentPage } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { QuizIcon } from "@/components/Icons";
-import BookQuizPlayer from "./components/BookQuizPlayer";
+import { QuizIcon } from "@/components";
+import { BookQuizPlayer } from "./components";
 
 export default function BookQuizWrapper({ id, document }: { id: string; document: { title: string } }) {
   return (

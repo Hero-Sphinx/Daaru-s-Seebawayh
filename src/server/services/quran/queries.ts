@@ -1,6 +1,7 @@
-import db from "@/server/databases/db";
-import { buildLemmaIndex, type LemmaCandidate } from "@/helpers/quran/lemmaMatch";
-import type { PosDTO, QuranChapterDTO, QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types/quran";
+import "server-only";
+import { buildLemmaIndex, type LemmaCandidate } from "@/helpers";
+import { db } from "@/server/databases";
+import type { PosDTO, QuranChapterDTO, QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
 
 /** Verses per reader page — keeps long surahs (al-Baqarah: 286 verses, ~6k words) to a sane payload. */
 export const VERSES_PER_PAGE = 30;

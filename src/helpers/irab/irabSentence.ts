@@ -11,7 +11,7 @@
  * same as it gets no case-sign badge today — nothing is invented.
  */
 
-import type { CaseType, GrammaticalRole, IrabToken } from "@/types/irab";
+import type { CaseType, GrammaticalRole, IrabToken } from "@/types";
 
 interface DeclensionPhrase {
   adjectiveAr: string;

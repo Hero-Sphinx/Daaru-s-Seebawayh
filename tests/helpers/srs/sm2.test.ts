@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reviewSm2, SM2_DEFAULTS } from "@/helpers/srs/sm2";
+import { reviewSm2, SM2_DEFAULTS } from "@/helpers";
 
 describe("reviewSm2", () => {
   it("schedules a brand-new card 1 day out on first success", () => {

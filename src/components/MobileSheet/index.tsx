@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { XIcon } from "@/components/Icons";
+import { XIcon } from "../Icons";
 
 /**
  * Details for something the user tapped (a Qur'an word, a word in a book):

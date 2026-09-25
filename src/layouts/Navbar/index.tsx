@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, SunIcon } from "@/components/Icons";
-import { ARABIC_SCALE_COOKIE, ARABIC_SCALE_STEP, clampArabicScale, MAX_ARABIC_SCALE, MIN_ARABIC_SCALE, setPrefCookie, THEME_COOKIE } from "@/constants/themePrefs";
-import { FULL_NAME_AR, FULL_NAME_EN } from "@/constants/site";
+import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, SunIcon } from "@/components";
+import { ARABIC_SCALE_COOKIE, ARABIC_SCALE_STEP, clampArabicScale, FULL_NAME_AR, FULL_NAME_EN, MAX_ARABIC_SCALE, MIN_ARABIC_SCALE, setPrefCookie, THEME_COOKIE } from "@/constants";
 import { logout } from "@/server/actions/auth";
 
 const NAV_LINKS = [

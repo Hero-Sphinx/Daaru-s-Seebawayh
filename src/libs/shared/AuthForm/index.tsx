@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import type { AuthFormState } from "@/types/auth";
+import { MIN_PASSWORD_LENGTH } from "@/constants";
+import type { AuthFormState } from "@/types";
 import { AUTH_BUTTON, AUTH_CARD, AUTH_INPUT } from "../authStyles";
-import { MIN_PASSWORD_LENGTH } from "@/constants/passwordPolicy";
 
 type AuthFormProps = {
   mode: "login" | "signup";

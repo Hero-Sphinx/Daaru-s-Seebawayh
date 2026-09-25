@@ -1,4 +1,4 @@
-import { generateStructured, GeminiNotConfiguredError } from "@/server/helpers/geminiClient";
+import { GeminiNotConfiguredError, generateStructured } from "@/server/helpers";
 
 const TRANSLATE_SCHEMA = {
   type: "object",

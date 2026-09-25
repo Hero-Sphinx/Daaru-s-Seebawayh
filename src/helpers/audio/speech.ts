@@ -1,5 +1,5 @@
-import { playClip } from "@/helpers/audio/player";
-import { wordAudioUrl } from "@/helpers/quran/audio";
+import { wordAudioUrl } from "../quran/audio";
+import { playClip } from "./player";
 
 export interface SpeakResult {
   spoke: boolean;

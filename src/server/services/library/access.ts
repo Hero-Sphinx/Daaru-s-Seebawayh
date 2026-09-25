@@ -1,6 +1,8 @@
-import db from "@/server/databases/db";
+import "server-only";
 import { Prisma } from "@/generated/prisma/client";
-import type { DocumentRole } from "@/types/library";
+import { forbidden, notFound } from "@/server/constants";
+import { db } from "@/server/databases";
+import type { DocumentRole } from "@/types";
 
 /**
  * Library document access rules (see DocumentRole in src/types/library), in
@@ -28,6 +30,7 @@ export async function findAccessibleDocument(userId: string, documentId: string)
 
 /** The user's role on one document, or null if they can't see it at all (treat as 404, not 403). */
 export async function getDocumentRole(userId: string, documentId: string): Promise<DocumentRole | null> {
+  if (!isUuid(documentId)) return null;
   const doc = await db.library_documents.findUnique({
     where: { id: documentId },
     select: { owner_user_id: true, library_document_shares: { where: { user_id: userId }, select: { role: true } } },
@@ -36,6 +39,18 @@ export async function getDocumentRole(userId: string, documentId: string): Promi
   if (doc.owner_user_id === userId) return "owner";
   const role = doc.library_document_shares[0]?.role;
   return role === "annotator" || role === "viewer" ? role : null;
+}
+
+/** The user's role, or a 404 when they can't see the document at all. */
+export async function requireDocumentRole(userId: string, documentId: string): Promise<DocumentRole> {
+  const role = await getDocumentRole(userId, documentId);
+  if (!role) throw notFound();
+  return role;
+}
+
+/** 404 when the user can't see the document, 403 when they can but don't own it. */
+export async function requireOwner(userId: string, documentId: string, action: string): Promise<void> {
+  if ((await requireDocumentRole(userId, documentId)) !== "owner") throw forbidden(`Only the owner can ${action}.`);
 }
 
 /** UUID shape check before hitting Postgres (an invalid uuid literal is a 500, not a 404). */

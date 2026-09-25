@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { BookIcon } from "@/components/Icons";
-import PageBanner from "@/layouts/PageBanner";
-import type { VocabularyPageData } from "@/types/vocabulary";
-import VocabularyManager from "./components/VocabularyManager";
-import VocabularyPractice from "./components/VocabularyPractice";
+import { BookIcon } from "@/components";
+import { PageBanner } from "@/layouts";
+import type { VocabularyPageData } from "@/types";
+import { VocabularyManager, VocabularyPractice } from "./components";
 
 function BannerStat({ value, label }: { value: number; label: string }) {
   return (

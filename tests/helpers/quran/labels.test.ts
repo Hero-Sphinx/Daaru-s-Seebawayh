@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { describeWord, wordTone } from "@/helpers/quran/labels";
-import type { QuranWordDTO } from "@/types/quran";
+import { describeWord, wordTone } from "@/helpers";
+import type { QuranWordDTO } from "@/types";
 
 const base: QuranWordDTO = {
   id: "1",

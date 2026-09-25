@@ -1,6 +1,6 @@
 import { DashboardWrapper } from "@/libs";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { getDashboard } from "@/server/services/dashboard/getDashboard";
+import { getCurrentUserId } from "@/server/lib";
+import { getDashboard } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

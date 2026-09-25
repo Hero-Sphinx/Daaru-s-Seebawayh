@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBulkVocabularyText } from "@/helpers/vocabulary";
+import { parseBulkVocabularyText } from "@/helpers";
 
 describe("parseBulkVocabularyText", () => {
   it("parses word,meaning pairs", () => {

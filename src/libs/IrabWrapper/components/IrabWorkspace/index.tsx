@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { DependencyEdge, IrabToken, RoleCode, SentenceAnalysis } from "@/types/irab";
-import { buildIrabSentence } from "@/helpers/irab/irabSentence";
+import { buildIrabSentence } from "@/helpers";
+import type { DependencyEdge, IrabToken, RoleCode, SentenceAnalysis } from "@/types";
 
 const ROLE_STYLES: Record<RoleCode, { bg: string; text: string; ring: string }> = {
   FIL: { bg: "bg-sky-100 dark:bg-sky-950", text: "text-sky-800 dark:text-sky-200", ring: "ring-sky-400" },

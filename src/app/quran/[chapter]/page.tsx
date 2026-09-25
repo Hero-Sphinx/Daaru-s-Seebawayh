@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { QuranChapterWrapper } from "@/libs";
-import { getChapter, getVerses, VERSES_PER_PAGE } from "@/server/services/quran/queries";
+import { getChapter, getVerses, VERSES_PER_PAGE } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

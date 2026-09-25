@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseFreeText, toSentenceAnalysis, type RawCandidate } from "@/helpers/irab/freeTextParser";
-import { buildIrabSentence } from "@/helpers/irab/irabSentence";
-import { tokenizeSentence } from "@/helpers/irab/tokenize";
+import { buildIrabSentence, parseFreeText, type RawCandidate, tokenizeSentence, toSentenceAnalysis } from "@/helpers";
 import camelFixtures from "../../fixtures/irab/camelCandidates.json";
 
 /**

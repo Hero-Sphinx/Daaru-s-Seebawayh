@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { updateDisplayName } from "@/server/actions/settings";
-import type { SettingsState } from "@/types/settings";
+import type { SettingsState } from "@/types";
 
 export default function ProfileForm({ displayName, email }: { displayName: string | null; email: string }) {
   const [state, formAction, pending] = useActionState<SettingsState, FormData>(updateDisplayName, {});

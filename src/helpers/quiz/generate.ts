@@ -7,10 +7,8 @@
  * question is still backed by verified data, just generated in the browser.
  */
 
-import { sampleSentences } from "@/constants/data/sampleSentences";
-import { GRAMMATICAL_ROLES } from "@/constants/data/grammaticalRoles";
-import { waznExamples } from "@/constants/data/wazn";
-import { buildOptions, mulberry32, shuffle } from "@/helpers/quiz/primitives";
+import { GRAMMATICAL_ROLES, sampleSentences, waznExamples } from "@/constants";
+import { buildOptions, mulberry32, shuffle } from "./primitives";
 
 export { mulberry32 };
 
@@ -23,7 +21,7 @@ export interface VocabPoolItem {
   root: string;
 }
 
-export type QuizTopic = "mixed" | "vocab" | "irab" | "sarf" | "meaning";
+export type CuratedQuizTopic = "mixed" | "vocab" | "irab" | "sarf" | "meaning";
 
 export interface QuizQuestion {
   id: string;
@@ -148,7 +146,7 @@ function sarfQuestions(rng: () => number): QuizQuestion[] {
  * than requested, returns fewer rather than repeating any.
  */
 export function generateQuizQuestions(
-  topic: QuizTopic,
+  topic: CuratedQuizTopic,
   count: number,
   vocabulary: VocabPoolItem[],
   rng: () => number = Math.random

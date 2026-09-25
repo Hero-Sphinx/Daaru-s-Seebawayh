@@ -17,4 +17,6 @@ export interface PlayableBookQuizQuestion {
   correctIndex: number;
   pageNumber?: number;
   ruleReference?: string;
+  /** Rests on Gemini output (see server/services/library/bookQuiz.ts) — shown with an "AI-generated" label. */
+  aiGenerated: boolean;
 }

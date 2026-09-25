@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boxForInterval, LEITNER_INTERVALS_DAYS, reviewLeitner } from "@/helpers/srs/leitner";
+import { boxForInterval, LEITNER_INTERVALS_DAYS, reviewLeitner } from "@/helpers";
 
 const NOW = new Date("2026-09-23T10:00:00Z");
 

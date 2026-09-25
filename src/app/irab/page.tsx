@@ -1,4 +1,4 @@
-import { sampleSentences } from "@/constants/data/sampleSentences";
+import { sampleSentences } from "@/constants";
 import { IrabWrapper } from "@/libs";
 
 export default function IrabPage() {

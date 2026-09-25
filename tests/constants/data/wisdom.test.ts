@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WISDOM, wisdomIndexForDate } from "@/constants/data/wisdom";
+import { WISDOM, wisdomIndexForDate } from "@/constants";
 
 describe("wisdom of the day", () => {
   it("every entry has text, a translation, an author and a source", () => {

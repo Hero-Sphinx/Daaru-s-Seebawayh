@@ -1,4 +1,4 @@
-import { XIcon } from "@/components/Icons";
+import { XIcon } from "@/components";
 
 /**
  * Static reference content — the three pillars of I'rab analysis, each

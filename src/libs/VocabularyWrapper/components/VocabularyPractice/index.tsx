@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { VocabularyCardDTO } from "@/types/vocabulary";
-import { VolumeIcon } from "@/components/Icons";
-import { listenArabic } from "@/helpers/audio/speech";
-import { playClip } from "@/helpers/audio/player";
-import { wordAudioUrl } from "@/helpers/quran/audio";
+import { VolumeIcon } from "@/components";
+import { listenArabic, playClip, wordAudioUrl } from "@/helpers";
+import type { VocabularyCardDTO } from "@/types";
 
 interface ReviewOutcome {
   vocabItemId: number;

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mulberry32 } from "@/helpers/quiz/primitives";
-import { rootSimilarity, similarRoots } from "@/helpers/quiz/distractors";
-import { generateFromTemplates, itemFitsTemplate, renderQuestion, type DistractorContext } from "@/helpers/quiz/templateEngine";
-import { parseTemplateBody, type LoadedTemplate, type QuizItem } from "@/helpers/quiz/templateTypes";
-import { QUIZ_TEMPLATES } from "@/helpers/quiz/templates";
-import { ASPECT_LABELS, CASE_LABELS } from "@/helpers/quiz/answerLabels";
+import { ASPECT_LABELS, CASE_LABELS, type DistractorContext, generateFromTemplates, itemFitsTemplate, type LoadedTemplate, mulberry32, parseTemplateBody, QUIZ_TEMPLATES, type QuizItem, renderQuestion, rootSimilarity, similarRoots } from "@/helpers";
 
 const ROOTS = ["ك ت ب", "ك ت م", "ك س ب", "ق ت ل", "ع ل م", "ح ك م", "ر ح م", "د ر س", "د ر ك", "غ ر س"];
 

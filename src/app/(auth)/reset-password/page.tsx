@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ResetPasswordWrapper } from "@/libs";
-import { findResetToken } from "@/server/services/auth/passwordReset";
+import { findResetToken } from "@/server/services";
 
 export const metadata: Metadata = { title: "Choose a new password" };
 

@@ -1,5 +1,5 @@
+import { VERB_FORMS } from "../quran/tagset";
 import { ASPECT_LABELS, CASE_LABELS, verbFormLabel } from "./answerLabels";
-import { VERB_FORMS } from "@/helpers/quran/tagset";
 import type { TemplateBody } from "./templateTypes";
 
 /**

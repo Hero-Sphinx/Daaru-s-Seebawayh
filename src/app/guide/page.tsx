@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { GuideWrapper } from "@/libs";
-import { getSessionUser } from "@/server/lib/auth";
+import { getSessionUser } from "@/server/lib";
 
 export const metadata: Metadata = { title: "How to use" };
 

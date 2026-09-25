@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bareLemmaKey, buildLemmaIndex, matchLemma, type LemmaCandidate } from "@/helpers/quran/lemmaMatch";
+import { bareLemmaKey, buildLemmaIndex, type LemmaCandidate, matchLemma } from "@/helpers";
 
 // Real lemma spellings from the imported corpus (Uthmani).
 const LEMMAS: LemmaCandidate[] = [

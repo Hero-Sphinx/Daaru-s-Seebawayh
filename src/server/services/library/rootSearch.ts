@@ -1,4 +1,4 @@
-import { normalizeArabicForSearch, normalizeWithMap } from "@/helpers/arabic/normalize";
+import { normalizeArabicForSearch, normalizeWithMap } from "@/helpers";
 
 /**
  * Root-aware library search (ROADMAP.md Phase 5). Library text isn't

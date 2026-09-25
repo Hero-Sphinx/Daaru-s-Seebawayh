@@ -1,6 +1,6 @@
 import { SettingsWrapper } from "@/libs";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { getSettingsPage } from "@/server/services/settings/getSettingsPage";
+import { getCurrentUserId } from "@/server/lib";
+import { getSettingsPage } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

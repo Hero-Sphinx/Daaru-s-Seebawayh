@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRetryDelayMs } from "@/server/helpers/geminiClient";
+import { parseRetryDelayMs } from "@/server/helpers";
 
 describe("parseRetryDelayMs", () => {
   it("reads the human-readable hint from a real 429 body", () => {

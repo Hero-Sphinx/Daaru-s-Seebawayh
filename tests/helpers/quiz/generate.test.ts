@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateQuizQuestions, mulberry32, type VocabPoolItem } from "@/helpers/quiz/generate";
+import { generateQuizQuestions, mulberry32, type VocabPoolItem } from "@/helpers";
 
 const TEST_VOCAB: VocabPoolItem[] = [
   { id: 1, wordAr: "كِتَاب", transliteration: "kitab", meaningEn: "book", root: "ك ت ب" },

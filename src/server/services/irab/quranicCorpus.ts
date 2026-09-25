@@ -12,9 +12,9 @@
  * network call, no service to keep running.
  */
 
+import { candidateMatchesSurface, normalizeForMatch } from "@/helpers";
+import type { RawCandidate } from "@/helpers";
 import quranicCorpusWords from "@/server/data/quranicCorpusWords.json";
-import { candidateMatchesSurface, normalizeForMatch } from "@/helpers/irab/normalize";
-import type { RawCandidate } from "@/helpers/irab/freeTextParser";
 
 export interface QuranicCorpusCandidate {
   root: string | null;

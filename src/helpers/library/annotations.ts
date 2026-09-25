@@ -1,6 +1,6 @@
 /** Pure helpers for library annotations (highlight + note). */
 
-import type { DocumentRole } from "@/types/library";
+import type { DocumentRole } from "@/types";
 
 /** Owners and annotators may highlight and add notes; viewers only read. */
 export function canAnnotate(role: DocumentRole | null): boolean {

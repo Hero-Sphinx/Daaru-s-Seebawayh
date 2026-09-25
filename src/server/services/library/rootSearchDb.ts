@@ -1,8 +1,8 @@
-import db from "@/server/databases/db";
+import "server-only";
 import { Prisma } from "@/generated/prisma/client";
-import { normalizeArabicForSearch } from "@/helpers/arabic/normalize";
-import { matchLemma } from "@/helpers/quran/lemmaMatch";
-import { getLemmaIndex } from "@/server/services/quran/queries";
+import { matchLemma, normalizeArabicForSearch } from "@/helpers";
+import { db } from "@/server/databases";
+import { getLemmaIndex } from "../quran/queries";
 import { buildRootFormIndex, parseRootInput, peelPrefixes, type RootFormIndex } from "./rootSearch";
 
 /** DB side of root-aware search: resolving input to roots, and loading a root's attested forms. */

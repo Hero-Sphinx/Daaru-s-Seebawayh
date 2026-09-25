@@ -1,4 +1,4 @@
-import { normalizeForMatch } from "@/helpers/irab/normalize";
+import { normalizeForMatch } from "../irab/normalize";
 
 /**
  * Matches a learner-typed word against the Qur'an lemma dictionary

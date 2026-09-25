@@ -2,6 +2,15 @@
   "name": "daaru-s-seebawayh",
   "version": "0.1.0",
   "private": true,
+  "sideEffects": [
+    "*.css",
+    "./src/app/**",
+    "./src/generated/**",
+    "./src/server/**",
+    "./src/proxy.ts",
+    "./scripts/**",
+    "./prisma/**"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -23,7 +32,9 @@
     "pg": "^8.13.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "unpdf": "^1.8.1"
+    "server-only": "^0.0.1",
+    "unpdf": "^1.8.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

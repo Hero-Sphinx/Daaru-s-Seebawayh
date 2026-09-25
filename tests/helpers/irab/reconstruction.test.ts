@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { sampleSentences } from "@/constants/data/sampleSentences";
-import { gradeReconstruction, isComplete, isReconstructable, type TokenAnswer } from "@/helpers/irab/reconstruction";
+import { sampleSentences } from "@/constants";
+import { gradeReconstruction, isComplete, isReconstructable, type TokenAnswer } from "@/helpers";
 
 const sentence = sampleSentences.find(isReconstructable)!;
 

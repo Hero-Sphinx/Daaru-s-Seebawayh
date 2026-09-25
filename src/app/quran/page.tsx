@@ -1,5 +1,5 @@
 import { QuranWrapper } from "@/libs";
-import { listChapters } from "@/server/services/quran/queries";
+import { listChapters } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

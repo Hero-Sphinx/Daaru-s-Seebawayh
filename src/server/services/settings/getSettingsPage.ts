@@ -1,5 +1,6 @@
-import db from "@/server/databases/db";
-import type { SettingsPageData } from "@/types/settings";
+import "server-only";
+import { db } from "@/server/databases";
+import type { SettingsPageData } from "@/types";
 
 export async function getSettingsPage(userId: string): Promise<SettingsPageData> {
   const [user, boxCounts] = await Promise.all([

@@ -1,10 +1,9 @@
-import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Amiri } from "next/font/google";
 import { cookies } from "next/headers";
+import type { CSSProperties } from "react";
+import { ARABIC_SCALE_COOKIE, clampArabicScale, SESSION_COOKIE, THEME_COOKIE } from "@/constants";
 import { Footer, Navbar } from "@/layouts";
-import { SESSION_COOKIE } from "@/constants/auth";
-import { ARABIC_SCALE_COOKIE, clampArabicScale, THEME_COOKIE } from "@/constants/themePrefs";
 import "@/styles/globals.css";
 
 const geistSans = Geist({

@@ -1,6 +1,7 @@
-import db from "@/server/databases/db";
-import { getLemmaOccurrences } from "@/server/services/quran/queries";
-import type { VocabularyCardDTO, VocabularyPageData } from "@/types/vocabulary";
+import "server-only";
+import { db } from "@/server/databases";
+import type { VocabularyCardDTO, VocabularyPageData } from "@/types";
+import { getLemmaOccurrences } from "../quran/queries";
 import { toVocabularyCardDTO, VOCAB_QUERY_INCLUDE } from "./dto";
 
 export async function getVocabularyPage(userId: string): Promise<VocabularyPageData> {

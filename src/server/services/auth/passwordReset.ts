@@ -1,8 +1,9 @@
-import { createHash, randomBytes } from "node:crypto";
+import "server-only";
 import { headers } from "next/headers";
-import db from "@/server/databases/db";
-import { realName } from "@/helpers/displayName";
-import { sendEmail } from "@/server/lib/email";
+import { createHash, randomBytes } from "node:crypto";
+import { realName } from "@/helpers";
+import { db } from "@/server/databases";
+import { sendEmail } from "@/server/lib";
 
 /**
  * Password reset by emailed link. The link carries a random 256-bit token;

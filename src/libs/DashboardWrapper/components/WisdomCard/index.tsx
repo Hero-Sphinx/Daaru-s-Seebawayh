@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { WISDOM, wisdomIndexForDate, type Wisdom } from "@/constants/data/wisdom";
-import { setPrefCookie, TIMEZONE_COOKIE } from "@/constants/themePrefs";
+import { setPrefCookie, TIMEZONE_COOKIE, WISDOM, type Wisdom, wisdomIndexForDate } from "@/constants";
 
 function browserTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

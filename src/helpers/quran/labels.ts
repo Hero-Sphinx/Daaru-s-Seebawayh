@@ -1,5 +1,5 @@
+import type { QuranWordDTO } from "@/types";
 import { VERB_FORMS } from "./tagset";
-import type { QuranWordDTO } from "@/types/quran";
 
 /**
  * Traditional Arabic grammar terms for the corpus's morphological

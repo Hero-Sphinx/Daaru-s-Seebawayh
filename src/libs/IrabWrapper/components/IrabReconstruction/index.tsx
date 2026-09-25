@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { RoleCode, SentenceAnalysis } from "@/types/irab";
-import { GRAMMATICAL_ROLES, ROLE_CODES } from "@/constants/data/grammaticalRoles";
-import { CheckIcon, XIcon } from "@/components/Icons";
-import { gradeReconstruction, isReconstructable, missingAnswers, type ReconstructionGrade, type TokenAnswer } from "@/helpers/irab/reconstruction";
+import { CheckIcon, XIcon } from "@/components";
+import { GRAMMATICAL_ROLES, ROLE_CODES } from "@/constants";
+import { gradeReconstruction, isReconstructable, missingAnswers, type ReconstructionGrade, type TokenAnswer } from "@/helpers";
+import type { RoleCode, SentenceAnalysis } from "@/types";
 
 const ROOT_VALUE = "root";
 

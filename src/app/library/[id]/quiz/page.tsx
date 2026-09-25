@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { BookQuizWrapper } from "@/libs";
-import { getCurrentUserId } from "@/server/lib/auth";
-import { findAccessibleDocument } from "@/server/services/library/access";
+import { getCurrentUserId } from "@/server/lib";
+import { findAccessibleDocument } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 

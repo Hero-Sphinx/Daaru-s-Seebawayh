@@ -1,4 +1,4 @@
-import { waznExamples } from "@/constants/data/wazn";
+import { waznExamples } from "@/constants";
 
 /**
  * Reference data for the Quranic Arabic Corpus import: its part-of-speech

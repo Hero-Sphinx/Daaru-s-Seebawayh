@@ -1,4 +1,4 @@
-import type { RoleCode, SentenceAnalysis } from "@/types/irab";
+import type { RoleCode, SentenceAnalysis } from "@/types";
 
 /**
  * Grading for the I'rab reconstruction exercise (ROADMAP.md Phase 5): the

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wordAudioUrl } from "@/helpers/quran/audio";
+import { wordAudioUrl } from "@/helpers";
 
 describe("wordAudioUrl", () => {
   it("zero-pads chapter, verse and word to the CDN's 3-digit scheme", () => {

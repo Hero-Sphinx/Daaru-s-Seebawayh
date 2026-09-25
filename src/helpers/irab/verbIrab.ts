@@ -1,4 +1,4 @@
-import type { CaseSign } from "@/types/irab";
+import type { CaseSign } from "@/types";
 import { finalMark } from "./caseEnding";
 import type { Reading } from "./morph";
 import { BUILT_ON, stripDiacritics, type BuiltOn } from "./particles";

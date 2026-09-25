@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { mulberry32 } from "@/helpers/quiz/primitives";
-import { buildFawaidQuestions, buildIrabExcerptQuestions, selectSentencesForMeaningMatch, splitIntoSentences, type FawaidPoolItem } from "@/helpers/quiz/bookGenerate";
-import type { RawCandidate } from "@/helpers/irab/freeTextParser";
+import { buildFawaidQuestions, buildIrabExcerptQuestions, type FawaidPoolItem, mulberry32, selectSentencesForMeaningMatch, splitIntoSentences } from "@/helpers";
+import type { RawCandidate } from "@/helpers";
 import camelFixtures from "../../fixtures/irab/camelCandidates.json";
 
 describe("buildFawaidQuestions", () => {

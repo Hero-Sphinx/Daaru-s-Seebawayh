@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Book quiz subtype: sentence-to-meaning matching (an Arabic sentence from
  * the book, pick its correct English translation from 4 options). Which
@@ -14,9 +15,9 @@
  * latency and quota pressure for no benefit.
  */
 
-import { generateStructured, GeminiNotConfiguredError } from "@/server/helpers/geminiClient";
-import { buildOptions } from "@/helpers/quiz/primitives";
-import type { SelectedSentence } from "@/helpers/quiz/bookGenerate";
+import { buildOptions } from "@/helpers";
+import type { SelectedSentence } from "@/helpers";
+import { GeminiNotConfiguredError, generateStructured } from "@/server/helpers";
 
 export interface MeaningMatchQuestion {
   promptAr: string;

@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { parseFreeText, type RawCandidate, scoreParse, tokenizeSentence } from "@/helpers";
 import camelFixtures from "../../fixtures/irab/camelCandidates.json";
 import { GOLD } from "../../fixtures/irab/gold";
-import { scoreParse } from "@/helpers/irab/accuracy";
-import { parseFreeText, type RawCandidate } from "@/helpers/irab/freeTextParser";
-import { tokenizeSentence } from "@/helpers/irab/tokenize";
 
 const FIXTURES = camelFixtures as Record<string, RawCandidate[]>;
 

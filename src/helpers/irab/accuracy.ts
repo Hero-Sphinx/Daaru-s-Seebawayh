@@ -34,7 +34,6 @@ export function scoreParse(result: FreeTextParseResult, gold: string): Score {
   let refused = false;
   goldWords.forEach((g, w) => {
     const got = byWord.get(w) ?? [];
-    const expected = g.split("+");
     if (got.every((r) => r === null)) {
       refused = true;
       issues.push(`${surfaceOf.get(w)}: unplaced (gold ${g})`);

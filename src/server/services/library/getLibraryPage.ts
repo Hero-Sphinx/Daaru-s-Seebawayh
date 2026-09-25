@@ -1,5 +1,6 @@
-import db from "@/server/databases/db";
-import type { LibraryPageData } from "@/types/library";
+import "server-only";
+import { db } from "@/server/databases";
+import type { LibraryPageData } from "@/types";
 import { toLibraryDocumentDTO } from "./dto";
 
 export async function getLibraryPage(userId: string): Promise<LibraryPageData> {

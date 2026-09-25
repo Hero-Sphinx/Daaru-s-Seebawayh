@@ -1,10 +1,7 @@
-import { ScrollIcon } from "@/components/Icons";
-import ProcessingRefresher from "@/components/ProcessingRefresher";
-import PageBanner from "@/layouts/PageBanner";
-import type { LibraryPageData } from "@/types/library";
-import LibraryDocumentCard from "./components/LibraryDocumentCard";
-import LibrarySearch from "./components/LibrarySearch";
-import LibraryUpload from "./components/LibraryUpload";
+import { ProcessingRefresher, ScrollIcon } from "@/components";
+import { PageBanner } from "@/layouts";
+import type { LibraryPageData } from "@/types";
+import { LibraryDocumentCard, LibrarySearch, LibraryUpload } from "./components";
 
 export default function LibraryWrapper({ documents, shared }: LibraryPageData) {
   const anyProcessing = [...documents, ...shared.map((x) => x.doc)].some((d) => d.processingStatus === "processing");

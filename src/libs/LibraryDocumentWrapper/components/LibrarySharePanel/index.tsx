@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { DocumentRole, DocumentShareDTO as Share } from "@/types/library";
+import { useState } from "react";
+import type { DocumentRole, DocumentShareDTO as Share } from "@/types";
 
 const ROLE_LABEL: Record<string, string> = {
   viewer: "Can read",

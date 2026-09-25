@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LightbulbIcon } from "@/components/Icons";
-import type { FawaidDTO as Fawaid } from "@/types/library";
+import { useState } from "react";
+import { LightbulbIcon } from "@/components";
+import type { FawaidDTO as Fawaid } from "@/types";
 
 /** Each kind of benefit has its own colour, so a page of fawā'id reads at a glance. */
 const CATEGORIES: Record<string, { label: string; labelAr: string; card: string; chip: string; accent: string }> = {

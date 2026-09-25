@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rootToArabic, toArabic, toArabicLexical, toSimpleArabic, UnknownBuckwalterCharError } from "@/helpers/quran/buckwalter";
+import { rootToArabic, toArabic, toArabicLexical, toSimpleArabic, UnknownBuckwalterCharError } from "@/helpers";
 
 describe("extended Buckwalter decoding", () => {
   it("decodes the basmalah's words exactly (NFC)", () => {

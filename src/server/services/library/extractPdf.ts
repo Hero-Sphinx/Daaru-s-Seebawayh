@@ -1,5 +1,6 @@
+import "server-only";
 import { extractText, getDocumentProxy } from "unpdf";
-import { generateStructuredFromImage, GeminiNotConfiguredError, GeminiQuotaExhaustedError, isGeminiTimeout } from "@/server/helpers/geminiClient";
+import { GeminiNotConfiguredError, GeminiQuotaExhaustedError, generateStructuredFromImage, isGeminiTimeout } from "@/server/helpers";
 
 export interface ExtractedPage {
   pageNumber: number;

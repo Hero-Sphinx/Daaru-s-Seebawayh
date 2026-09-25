@@ -1,10 +1,9 @@
+import "server-only";
 import { cookies } from "next/headers";
-import { wisdomIndexForDate } from "@/constants/data/wisdom";
-import { TIMEZONE_COOKIE } from "@/constants/themePrefs";
-import { realName } from "@/helpers/displayName";
-import { daysAgo } from "@/helpers/time";
-import db from "@/server/databases/db";
-import type { DashboardData } from "@/types/dashboard";
+import { TIMEZONE_COOKIE, wisdomIndexForDate } from "@/constants";
+import { daysAgo, realName } from "@/helpers";
+import { db } from "@/server/databases";
+import type { DashboardData } from "@/types";
 
 const MASTERED_REPETITIONS_THRESHOLD = 2;
 

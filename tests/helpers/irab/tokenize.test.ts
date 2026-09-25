@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tokenizeSentence } from "@/helpers/irab/tokenize";
+import { tokenizeSentence } from "@/helpers";
 
 describe("tokenizeSentence", () => {
   it("splits on whitespace", () => {

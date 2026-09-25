@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { MorphCandidate, VocabularyCardDTO, WordLookupResponse as LookupResponse } from "@/types/vocabulary";
-import { parseBulkVocabularyText } from "@/helpers/vocabulary";
-import { XIcon, VolumeIcon } from "@/components/Icons";
-import { listenArabic } from "@/helpers/audio/speech";
-import { playClip } from "@/helpers/audio/player";
-import { wordAudioUrl } from "@/helpers/quran/audio";
-import { isArabicWord } from "@/helpers/arabic/script";
+import { useState } from "react";
+import { VolumeIcon, XIcon } from "@/components";
+import { isArabicWord, listenArabic, parseBulkVocabularyText, playClip, wordAudioUrl } from "@/helpers";
+import type { MorphCandidate, VocabularyCardDTO, WordLookupResponse as LookupResponse } from "@/types";
 
 type Mode = "single" | "bulk";
 

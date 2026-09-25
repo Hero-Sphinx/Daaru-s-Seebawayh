@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
-import { getRootFamily } from "@/server/services/quran/queries";
+import { badRequest, notFound } from "@/server/constants";
+import { json, withAuth } from "@/server/lib";
+import { getRootFamily } from "@/server/services";
 
-// Shared reference data (not per-user), so no DAL check beyond the proxy's
-// signed-in gate.
-export async function GET(_request: Request, ctx: RouteContext<"/api/quran/roots/[id]">) {
-  const { id } = await ctx.params;
-  if (!/^\d+$/.test(id)) return NextResponse.json({ error: "Invalid root id" }, { status: 400 });
-  const family = await getRootFamily(BigInt(id));
-  if (!family) return NextResponse.json({ error: "Root not found" }, { status: 404 });
-  return NextResponse.json(family);
-}
+/** Every Qur'anic word built on one root. Shared reference data, not per-user. */
+export const GET = withAuth<{ id: string }>(async ({ params }) => {
+  if (!/^\d+$/.test(params.id)) throw badRequest("Invalid root id");
+  const family = await getRootFamily(BigInt(params.id));
+  if (!family) throw notFound("Root not found");
+  return json(family);
+});

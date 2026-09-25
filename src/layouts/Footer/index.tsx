@@ -1,4 +1,4 @@
-import { FULL_NAME_AR, FULL_NAME_EN } from "@/constants/site";
+import { FULL_NAME_AR, FULL_NAME_EN } from "@/constants";
 
 export default function Footer() {
   return (

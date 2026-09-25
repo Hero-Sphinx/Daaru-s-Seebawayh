@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePdfText } from "@/server/services/library/extractPdf";
+import { normalizePdfText } from "@/server/services";
 
 describe("normalizePdfText", () => {
   it("converts Arabic Presentation Forms back to logical Unicode", () => {

@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { QuizIcon, ScrollIcon } from "@/components/Icons";
-import ProcessingRefresher from "@/components/ProcessingRefresher";
-import { canAnnotate } from "@/helpers/library/annotations";
-import type { LibraryDocumentPageData } from "@/types/library";
-import LibraryReader from "./components/LibraryReader";
-import LibrarySharePanel from "./components/LibrarySharePanel";
-import LibrarySummary from "./components/LibrarySummary";
+import { ProcessingRefresher, QuizIcon, ScrollIcon } from "@/components";
+import { canAnnotate } from "@/helpers";
+import type { LibraryDocumentPageData } from "@/types";
+import { LibraryReader, LibrarySharePanel, LibrarySummary } from "./components";
 
 export default function LibraryDocumentWrapper({
   document,

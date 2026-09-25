@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { SentenceAnalysis } from "@/types/irab";
-import IrabWorkspace from "@/libs/IrabWrapper/components/IrabWorkspace";
-import IrabCheatSheet from "@/libs/IrabWrapper/components/IrabCheatSheet";
-import FreeTextIrabInput from "@/libs/IrabWrapper/components/FreeTextIrabInput";
-import IrabReconstruction from "@/libs/IrabWrapper/components/IrabReconstruction";
-import { BookIcon, CheckIcon, DiagramIcon, LightbulbIcon } from "@/components/Icons";
-import PageBanner from "@/layouts/PageBanner";
+import { BookIcon, CheckIcon, DiagramIcon, LightbulbIcon } from "@/components";
+import { PageBanner } from "@/layouts";
+import type { SentenceAnalysis } from "@/types";
+import { FreeTextIrabInput, IrabCheatSheet, IrabReconstruction, IrabWorkspace } from "./components";
 
 const MODES: { id: Mode; label: string; hint: string; icon: typeof BookIcon }[] = [
   { id: "curated", label: "Curated examples", hint: "Explore analysed sentences", icon: BookIcon },

@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Gemini API client — used for FR-2.2/2.3 (chapter summaries, Fawā'id
  * extraction) and OCR of scanned/image-only PDF pages (transcription, not a

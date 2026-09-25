@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDocumentText } from "@/server/services/library/summarize";
+import { buildDocumentText } from "@/server/services";
 
 describe("buildDocumentText", () => {
   it("includes all pages when under the char budget", () => {

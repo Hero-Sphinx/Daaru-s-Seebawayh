@@ -6,7 +6,7 @@
  * name never drifts between the places it's displayed.
  */
 
-import type { CaseSign, CaseType, GrammaticalRole, RoleCode } from "@/types/irab";
+import type { CaseSign, CaseType, GrammaticalRole, RoleCode } from "@/types";
 
 export const GRAMMATICAL_ROLES: Record<RoleCode, GrammaticalRole> = {
   FIL: {

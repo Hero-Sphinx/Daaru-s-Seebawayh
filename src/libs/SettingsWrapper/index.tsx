@@ -1,7 +1,6 @@
-import PageBanner from "@/layouts/PageBanner";
-import type { SettingsPageData } from "@/types/settings";
-import ProfileForm from "./components/ProfileForm";
-import SettingsForm from "./components/SettingsForm";
+import { PageBanner } from "@/layouts";
+import type { SettingsPageData } from "@/types";
+import { ProfileForm, SettingsForm } from "./components";
 
 export default function SettingsWrapper({ user, boxCounts }: SettingsPageData) {
   return (

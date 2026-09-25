@@ -4,7 +4,8 @@
  * the free-text I'rab parser route (FR-1.1).
  */
 
-import type { MorphCandidate } from "@/types/vocabulary";
+import { ApiError } from "@/server/constants";
+import type { MorphCandidate } from "@/types";
 
 const CAMEL_SERVICE_URL = process.env.CAMEL_SERVICE_URL ?? "http://localhost:8001";
 
@@ -37,11 +38,16 @@ export async function analyzeWord(word: string, dedupe = true): Promise<CamelCan
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
-    throw new CamelServiceUnavailableError("CAMeL Tools service is unreachable — is it running? See services/camel/README.md");
+    // Developers get the fix; learners get something they can act on. A
+    // free-tier host sleeps when idle, so the usual cause in production is a
+    // cold start that outlasts the timeout — the next try normally works.
+    console.warn(`CAMeL Tools service unreachable at ${CAMEL_SERVICE_URL} — is it running? See services/camel/README.md`);
+    throw new CamelServiceUnavailableError("The word-analysis service isn't responding right now — it may be waking up. Please try again in a minute.");
   }
 
   if (!upstream.ok) {
-    throw new Error("CAMeL Tools service returned an error");
+    console.error(`CAMeL Tools service answered ${upstream.status} for "${word}"`);
+    throw new ApiError(502, "The word-analysis service couldn't analyse that word.");
   }
 
   const data = (await upstream.json()) as { word: string; candidates: CamelCandidate[] };

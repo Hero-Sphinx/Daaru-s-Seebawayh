@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { safeNextPath } from "@/constants/safeRedirect";
+import { safeNextPath } from "@/constants";
 import { SignupWrapper } from "@/libs";
-import { getSessionUser } from "@/server/lib/auth";
+import { getSessionUser } from "@/server/lib";
 
 export default async function SignupPage({ searchParams }: PageProps<"/signup">) {
   const next = safeNextPath((await searchParams).next);
