@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import MobileSheet from "@/components/MobileSheet";
 import { PlayIcon, VolumeIcon } from "@/components/icons";
 import { playClip, playSequence, stopAudio } from "@/lib/audio-player";
 import { QURAN_AUDIO_ATTRIBUTION, wordAudioUrl } from "@/lib/quran/audio";
@@ -31,6 +32,7 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
   const inFlight = useRef(new Set<string>());
   const [playing, setPlaying] = useState<{ verse: number; index: number } | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const closeWord = useCallback(() => setSelected(null), []);
 
   function playVerse(v: QuranVerseDTO) {
     if (playing?.verse === v.number) {
@@ -67,6 +69,9 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <div className="space-y-4">
         {audioError && <p className="text-sm text-rose-600">{audioError}</p>}
+        <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-900 dark:bg-teal-950/40 dark:text-teal-200 lg:hidden">
+          Tap any word to see its root, form and grammar, and to hear it recited.
+        </p>
         <ul className="flex flex-wrap gap-2 text-xs">
           {LEGEND.map(({ tone, label }) => (
             <li key={tone} className={`rounded-md px-2 py-1 ${TONE_CLASS[tone]} ${tone === "other" ? "border border-border" : ""}`}>
@@ -120,13 +125,16 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
       {/* Sticky on wide screens, but capped to the viewport and scrollable on
           its own — a sticky panel taller than the window can never reveal its bottom. */}
       <aside className="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pb-4">
-        {selected ? (
-          <WordCard chapterId={chapterId} verse={selected.verse} word={selected.word} root={selected.word.root ? roots[selected.word.root.id] : undefined} />
-        ) : (
-          <div className="rounded-lg border border-dashed border-stone-300 p-6 text-sm text-stone-500 dark:border-stone-600 dark:text-stone-400">
-            Tap any word to see its root, lemma, part of speech, case or mood, and how it breaks into prefix / stem / suffix.
-          </div>
-        )}
+        {/* On phones this slides up from the bottom when a word is tapped; on large screens it's the side column. */}
+        <MobileSheet open={selected !== null} onClose={closeWord} title="Word details">
+          {selected ? (
+            <WordCard chapterId={chapterId} verse={selected.verse} word={selected.word} root={selected.word.root ? roots[selected.word.root.id] : undefined} />
+          ) : (
+            <div className="rounded-lg border border-dashed border-stone-300 p-6 text-sm text-stone-500 dark:border-stone-600 dark:text-stone-400">
+              Tap any word to see its root, lemma, part of speech, case or mood, and how it breaks into prefix / stem / suffix.
+            </div>
+          )}
+        </MobileSheet>
       </aside>
     </div>
   );

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+
+import { useCallback, useState } from "react";
+import MobileSheet from "@/components/MobileSheet";
 import { useRouter } from "next/navigation";
 import type { EnrichCandidate } from "@/app/api/vocabulary/enrich/route";
 import { rangesOverlap, type AnnotationDTO } from "@/lib/library/annotations";
@@ -241,6 +243,10 @@ export default function LibraryReader({
   const [meaningLoading, setMeaningLoading] = useState(false);
   const [annotating, setAnnotating] = useState(false);
   const [draft, setDraft] = useState<{ start: number; end: number; quote: string } | null>(null);
+  const closeSheet = useCallback(() => {
+    setLookupWord(null);
+    setDraft(null);
+  }, []);
 
   const page = pages[pageIndex];
   const pageNotes = page ? annotations.filter((a) => a.textUnitId === page.id) : [];
@@ -421,6 +427,13 @@ export default function LibraryReader({
       </div>
 
       <aside className="space-y-4">
+        {/* The tapped word's details and the note being written: a bottom sheet on phones, the side column on large screens. */}
+        <MobileSheet
+          open={lookupWord !== null || draft !== null}
+          onClose={closeSheet}
+          title={draft ? "New note" : "Word details"}
+        >
+        <div className="space-y-4">
         {draft && (
           <NoteForm
             documentId={documentId}
@@ -451,6 +464,8 @@ export default function LibraryReader({
             </div>
           )
         )}
+        </div>
+        </MobileSheet>
         <NotesList documentId={documentId} notes={pageNotes} isOwner={isOwner} onChanged={() => router.refresh()} />
       </aside>
     </div>

@@ -36,8 +36,10 @@ type SiteHeaderProps = {
 };
 
 /**
- * Whether the full-name band should show: hidden once the user scrolls down
+ * Whether the header chrome should show: hidden once the user scrolls down
  * past the top, shown again as soon as they scroll up (or reach the top).
+ * Phones slide the whole header away (no layout change); large screens fold
+ * just the name band.
  *
  * Folding the band changes the header's height, and the browser compensates
  * by shifting the scroll position (scroll anchoring) — which looks like a
@@ -87,13 +89,15 @@ function useNameBandVisibility(): boolean {
 }
 
 const ICON_BUTTON =
-  "inline-flex h-9 items-center justify-center rounded-md border border-border bg-surface px-2.5 text-sm text-muted transition hover:border-brand/40 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40";
+  "inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200/80 bg-white/70 px-2.5 text-sm text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:border-emerald-900/60 dark:bg-white/5 dark:text-emerald-200 dark:hover:bg-emerald-950/50";
 
 export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn }: SiteHeaderProps) {
   const pathname = usePathname();
   const [isDark, setIsDark] = useState(initialIsDark);
   const [scale, setScale] = useState(initialArabicScale);
-  const nameBandVisible = useNameBandVisibility();
+  // Scrolling down: on phones the whole header slides away (it's tall there); on
+  // large screens only the name band folds. Scrolling up brings it all back.
+  const chromeVisible = useNameBandVisibility();
 
   function toggleDarkMode() {
     const next = !isDark;
@@ -110,15 +114,21 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
   }
 
   return (
-    <header className="site-chrome sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+    <header
+      className={`site-chrome sticky top-0 z-40 border-b border-emerald-200/70 bg-gradient-to-r from-emerald-50/95 via-white/95 to-amber-50/95 shadow-sm backdrop-blur transition-transform duration-300 ease-out motion-reduce:transition-none dark:border-emerald-900/50 dark:from-emerald-950/90 dark:via-parchment-800/95 dark:to-teal-950/80 ${
+        chromeVisible ? "" : "max-lg:-translate-y-full"
+      }`}
+    >
+      {/* A thin green-and-gold line across the very top. */}
+      <div aria-hidden className="h-1 bg-gradient-to-r from-emerald-700 via-teal-500 to-amber-400" />
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-3" aria-label={FULL_NAME_EN}>
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand font-arabic text-2xl leading-none text-brand-contrast">
+        <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label={FULL_NAME_EN}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-700 to-teal-800 font-arabic text-2xl leading-none text-amber-300 shadow-md shadow-emerald-800/30 ring-2 ring-amber-300/40 transition group-hover:scale-105">
             س
           </span>
           <span className="min-w-0">
-            <span className="block font-arabic text-xl font-bold leading-snug text-foreground">دَارُ سِيبَوَيْهِ</span>
-            <span className="block text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Daaru-s-Seebawayh</span>
+            <span className="block font-arabic text-xl font-bold leading-snug text-emerald-900 dark:text-amber-200">دَارُ سِيبَوَيْهِ</span>
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700/80 dark:text-emerald-300/80">Daaru-s-Seebawayh</span>
           </span>
         </Link>
 
@@ -152,12 +162,13 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
                   key={href}
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative rounded-md px-3 py-2 text-sm transition ${
-                    active ? "font-semibold text-foreground" : "text-muted hover:text-foreground"
+                  className={`rounded-xl px-3 py-2 text-sm transition ${
+                    active
+                      ? "bg-emerald-700 font-semibold text-white shadow-sm shadow-emerald-700/30"
+                      : "text-emerald-900/80 hover:bg-emerald-100/70 hover:text-emerald-900 dark:text-emerald-100/80 dark:hover:bg-emerald-900/40 dark:hover:text-white"
                   }`}
                 >
                   {label}
-                  {active && <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded bg-brand" />}
                 </Link>
               );
             })}
@@ -165,17 +176,17 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
         )}
 
         <div className="flex shrink-0 items-center gap-2">
-          <div className="hidden items-center rounded-md border border-border bg-surface sm:flex" role="group" aria-label="Arabic text size">
+          <div className="hidden items-center rounded-xl border border-emerald-200/80 bg-white/70 shadow-sm dark:border-emerald-900/60 dark:bg-white/5 sm:flex" role="group" aria-label="Arabic text size">
             <button
               type="button"
               onClick={() => changeScale(-ARABIC_SCALE_STEP)}
               disabled={scale <= MIN_ARABIC_SCALE}
               aria-label="Smaller Arabic text"
-              className="h-9 px-2.5 font-arabic text-sm text-muted transition hover:text-foreground disabled:opacity-40"
+              className="h-9 px-2.5 font-arabic text-sm text-emerald-800 transition hover:text-emerald-600 disabled:opacity-40 dark:text-emerald-200"
             >
               ع−
             </button>
-            <span className="min-w-12 border-x border-border px-1 text-center text-xs tabular-nums text-muted" aria-live="polite">
+            <span className="min-w-12 border-x border-emerald-200/80 px-1 text-center text-xs font-medium tabular-nums text-emerald-800 dark:border-emerald-900/60 dark:text-emerald-200" aria-live="polite">
               {scale}%
             </span>
             <button
@@ -183,7 +194,7 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
               onClick={() => changeScale(ARABIC_SCALE_STEP)}
               disabled={scale >= MAX_ARABIC_SCALE}
               aria-label="Larger Arabic text"
-              className="h-9 px-2.5 font-arabic text-base text-muted transition hover:text-foreground disabled:opacity-40"
+              className="h-9 px-2.5 font-arabic text-base text-emerald-800 transition hover:text-emerald-600 disabled:opacity-40 dark:text-emerald-200"
             >
               ع+
             </button>
@@ -210,24 +221,24 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
 
       {/* The full name, in Arabic and in transliteration — its own line so it's never truncated or clipped.
           It folds away while scrolling down and comes back on scrolling up (grid-rows 1fr ↔ 0fr animates the height). */}
+      {/* On phones the band stays (the whole header slides instead); on large screens it folds on its own. */}
       <div
-        aria-hidden={!nameBandVisible}
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
-          nameBandVisible ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        className={`grid grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+          chromeVisible ? "lg:grid-rows-[1fr] lg:opacity-100" : "lg:grid-rows-[0fr] lg:opacity-0"
         }`}
       >
-        <div className={`overflow-hidden bg-background/60 ${nameBandVisible ? "border-t border-border/70" : ""}`}>
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-0.5 px-4 py-1.5 text-center sm:flex-row sm:justify-between sm:text-left sm:px-6">
-          <p dir="rtl" lang="ar" className="font-arabic text-base leading-loose text-foreground/90">
-            {FULL_NAME_AR}
-          </p>
-          <p className="text-[11px] tracking-wide text-muted">{FULL_NAME_EN}</p>
-        </div>
+        <div className="overflow-hidden border-t border-emerald-200/60 bg-gradient-to-r from-emerald-700/[0.06] via-transparent to-amber-400/[0.08] dark:border-emerald-900/40">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-0.5 px-4 py-1.5 text-center sm:flex-row sm:justify-between sm:text-left sm:px-6">
+            <p dir="rtl" lang="ar" className="font-arabic text-base leading-loose text-emerald-900 dark:text-amber-100">
+              {FULL_NAME_AR}
+            </p>
+            <p className="text-[11px] tracking-wide text-emerald-800/70 dark:text-emerald-200/70">{FULL_NAME_EN}</p>
+          </div>
         </div>
       </div>
 
       {!signedIn && (
-        <nav aria-label="About" className="flex gap-2 border-t border-border px-3 py-2 sm:hidden">
+        <nav aria-label="About" className="flex gap-2 border-t border-emerald-200/60 px-3 py-2 dark:border-emerald-900/40 sm:hidden">
           <Link href="/vision" className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 py-2 text-sm font-semibold text-white shadow-sm">
             <AwardIcon className="h-4 w-4" /> Our vision
           </Link>
@@ -238,7 +249,7 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
       )}
 
       {signedIn && (
-        <nav aria-label="Main" className="flex gap-1 overflow-x-auto border-t border-border px-3 py-2 lg:hidden">
+        <nav aria-label="Main" className="flex gap-1.5 overflow-x-auto border-t border-emerald-200/60 px-3 py-2 dark:border-emerald-900/40 lg:hidden">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
@@ -246,8 +257,10 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition ${
-                  active ? "bg-brand text-brand-contrast" : "text-muted hover:bg-background hover:text-foreground"
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                  active
+                    ? "bg-emerald-700 text-white shadow-sm shadow-emerald-700/30"
+                    : "border border-emerald-200/80 bg-white/60 text-emerald-900 dark:border-emerald-900/60 dark:bg-white/5 dark:text-emerald-100"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
