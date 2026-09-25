@@ -15,7 +15,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
+# camel_data doesn't create its data directory itself (fails copying catalogue.json).
+RUN mkdir -p "$CAMELTOOLS_DATA" \
+ && pip install --no-cache-dir -r requirements.txt \
  && camel_data -i morphology-db-msa-r13
 
 COPY app.py .
