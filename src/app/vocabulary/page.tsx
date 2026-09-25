@@ -77,7 +77,7 @@ export default async function VocabularyPage() {
           Review queue — {dueCards.length} due
           <span className="h-px w-8 bg-emerald-300 dark:bg-emerald-800" />
         </h2>
-        <VocabularyPractice initialQueue={dueCards} algorithm={algorithm} />
+        <VocabularyPractice initialQueue={dueCards} allCards={allCards} algorithm={algorithm} />
       </div>
 
       <VocabularyManager items={allCards} />

@@ -1,3 +1,6 @@
+import { playClip } from "@/lib/audio-player";
+import { wordAudioUrl } from "@/lib/quran/audio";
+
 export interface SpeakResult {
   spoke: boolean;
   reason?: "unsupported" | "no-arabic-voice";
@@ -61,4 +64,39 @@ export async function speakArabic(text: string): Promise<SpeakResult> {
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
   return { spoke: true };
+}
+
+export interface ListenResult {
+  ok: boolean;
+  /** Why nothing played (shown to the learner). */
+  message?: string;
+}
+
+/**
+ * "Listen" for a vocabulary word, on any device (Android, iPhone, Windows):
+ *   1. the app's own pronunciation audio (/api/speech — generated once, then
+ *      cached for everyone), a plain audio file that needs nothing installed;
+ *   2. the device's Arabic voice, if it has one;
+ *   3. the word's recitation in the Qur'an, when it occurs there.
+ * playClip is called straight from the click (no await before it), which
+ * iPhones require before they'll play audio.
+ */
+export async function listenArabic(text: string, quran?: { chapter: number; verse: number; word: number } | null): Promise<ListenResult> {
+  try {
+    await playClip(`/api/speech?text=${encodeURIComponent(text.normalize("NFC"))}`);
+    return { ok: true };
+  } catch {
+    // fall through to the device voice
+  }
+  const spoken = await speakArabic(text);
+  if (spoken.spoke) return { ok: true };
+  if (quran) {
+    try {
+      await playClip(wordAudioUrl(quran.chapter, quran.verse, quran.word));
+      return { ok: true };
+    } catch {
+      // fall through
+    }
+  }
+  return { ok: false, message: "Couldn't play the pronunciation right now — check your connection, or try again in a little while." };
 }

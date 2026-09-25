@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { VocabularyCardDTO } from "@/lib/vocabulary";
 import { VolumeIcon } from "@/components/icons";
-import { speakArabic } from "@/lib/speech";
+import { listenArabic } from "@/lib/speech";
 import { playClip } from "@/lib/audio-player";
 import { wordAudioUrl } from "@/lib/quran/audio";
 
@@ -29,15 +29,32 @@ const LEITNER_BUTTONS: QualityButton[] = [
   { label: "Knew it", quality: 4, className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-200" },
 ];
 
+// Practice rounds (reloaded cards) aren't saved to the schedule — just known / missed.
+const PRACTICE_BUTTONS: QualityButton[] = LEITNER_BUTTONS;
+
+function shuffled<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function VocabularyPractice({
   initialQueue,
+  allCards,
   algorithm,
 }: {
   initialQueue: VocabularyCardDTO[];
+  /** Every word in the bank — "Reload cards" practises these as often as the learner likes. */
+  allCards: VocabularyCardDTO[];
   algorithm: "sm2" | "leitner";
 }) {
-  const buttons = algorithm === "leitner" ? LEITNER_BUTTONS : SM2_BUTTONS;
-  const [queue] = useState(initialQueue);
+  const [mode, setMode] = useState<"review" | "practice">("review");
+  const buttons = mode === "practice" ? PRACTICE_BUTTONS : algorithm === "leitner" ? LEITNER_BUTTONS : SM2_BUTTONS;
+  const [queue, setQueue] = useState(initialQueue);
+  const [practice, setPractice] = useState({ known: 0, missed: 0, rounds: 0 });
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -48,19 +65,35 @@ export default function VocabularyPractice({
   const current = queue[index];
   const sessionDone = index >= queue.length;
 
-  async function handleSpeak(wordAr: string) {
-    const result = await speakArabic(wordAr);
-    if (!result.spoke) {
-      setSpeechError(
-        result.reason === "no-arabic-voice"
-          ? "No Arabic voice is installed on this device, so it can't be read aloud. On Windows, add one under Settings → Time & Language → Speech; Microsoft Edge also ships with more voices by default than some other browsers."
-          : "Your browser doesn't support text-to-speech."
-      );
-    }
+  async function handleSpeak(wordAr: string, quran?: { chapter: number; verse: number; word: number } | null) {
+    setSpeechError(null);
+    const result = await listenArabic(wordAr, quran);
+    if (!result.ok) setSpeechError(result.message ?? "Couldn't play the pronunciation.");
+  }
+
+
+  /** A fresh, shuffled practice round over every word — as many times as the learner wants. Not saved to the schedule. */
+  function reloadCards() {
+    setQueue(shuffled(allCards));
+    setIndex(0);
+    setFlipped(false);
+    setError(null);
+    setSpeechError(null);
+    setMode("practice");
+    setPractice((p) => ({ known: 0, missed: 0, rounds: p.rounds + 1 }));
   }
 
   async function grade(quality: number) {
-    if (!current || current.cardId === null || submitting) return;
+    if (!current || submitting) return;
+    if (mode === "practice") {
+      // A missed word comes back at the end of the round.
+      if (quality === 0) setQueue((q) => [...q, current]);
+      setPractice((p) => (quality === 0 ? { ...p, missed: p.missed + 1 } : { ...p, known: p.known + 1 }));
+      setFlipped(false);
+      setIndex((i) => i + 1);
+      return;
+    }
+    if (current.cardId === null) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -79,6 +112,38 @@ export default function VocabularyPractice({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  const reloadButton = (big: boolean) =>
+    allCards.length > 0 && (
+      <button
+        type="button"
+        onClick={reloadCards}
+        className={
+          big
+            ? "mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:opacity-90"
+            : "inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+        }
+      >
+        <span aria-hidden>↻</span> {big ? `Reload cards — practise all ${allCards.length} words` : "Reload cards"}
+      </button>
+    );
+
+  if (sessionDone && mode === "practice") {
+    const total = practice.known + practice.missed;
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-surface p-6 text-center shadow-sm dark:border-emerald-900/60">
+        <p className="font-arabic text-2xl text-emerald-800 dark:text-amber-200" lang="ar" dir="rtl">
+          أَحْسَنْتَ
+        </p>
+        <h3 className="mt-1 text-lg font-semibold">Practice round complete</h3>
+        <p className="mt-2 text-sm text-muted">
+          {practice.known} known{practice.missed > 0 && ` · ${practice.missed} to revisit (they came back until you got them)`} · {total} cards
+        </p>
+        <p className="mt-1 text-xs text-muted">Practice rounds don&apos;t change your review schedule.</p>
+        {reloadButton(true)}
+      </div>
+    );
   }
 
   if (sessionDone) {
@@ -101,19 +166,29 @@ export default function VocabularyPractice({
             ))}
           </ul>
         )}
+        {reloadButton(true)}
       </div>
     );
   }
 
   return (
     <div className="rounded-lg border border-stone-200 bg-white p-6 dark:border-stone-700/60 dark:bg-parchment-800">
-      <div className="mb-4 flex items-center justify-between text-xs">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-          Card {index + 1} of {queue.length}
+          {mode === "practice" ? "Practice" : "Card"} {index + 1} of {queue.length}
         </span>
-        <span className="rounded-full bg-stone-100 px-2.5 py-1 font-mono dark:bg-stone-700">
-          {algorithm === "leitner" ? `box ${current.leitnerBox} of 5` : current.source}
-        </span>
+        <div className="flex items-center gap-2">
+          {mode === "practice" ? (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300" title="Practice rounds don't change your review schedule">
+              practice · not scheduled
+            </span>
+          ) : (
+            <span className="rounded-full bg-stone-100 px-2.5 py-1 font-mono dark:bg-stone-700">
+              {algorithm === "leitner" ? `box ${current.leitnerBox} of 5` : current.source}
+            </span>
+          )}
+          {reloadButton(false)}
+        </div>
       </div>
 
       <div className={`card-flip mx-auto h-64 w-full cursor-pointer ${flipped ? "flipped" : ""}`} onClick={() => setFlipped((f) => !f)}>
@@ -128,7 +203,7 @@ export default function VocabularyPractice({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSpeak(current.wordAr);
+                  handleSpeak(current.wordAr, current.quranOccurrence);
                 }}
                 className="flex items-center gap-1.5 rounded-full p-2 text-sm text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-900/30"
               >

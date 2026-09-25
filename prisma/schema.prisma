@@ -413,6 +413,12 @@ model auth_attempts {
   @@index([kind, bucket, created_at], map: "idx_auth_attempts_bucket")
 }
 
+model speech_cache {
+  text_key   String   @id
+  audio      Bytes
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
 model password_reset_tokens {
   id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_id    String    @db.Uuid

@@ -63,6 +63,14 @@ CREATE TABLE password_reset_tokens (
 );
 CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);
 
+-- Pronunciation audio for vocabulary words (Gemini TTS), generated once and
+-- shared by everyone (src/app/api/speech/route.ts).
+CREATE TABLE speech_cache (
+    text_key            TEXT PRIMARY KEY,
+    audio               BYTEA NOT NULL,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ============================================================================
 -- 2. LINGUISTIC REFERENCE / TAXONOMY TABLES
 -- (Shared dictionary layer used by morphology, vocabulary, and quizzes)

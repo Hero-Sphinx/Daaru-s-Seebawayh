@@ -89,7 +89,9 @@ export function isGeminiTimeout(err: unknown): boolean {
   return err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
 }
 
-async function callGemini<T>(parts: ContentPart[], schema: JsonSchema, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
+/** One generateContent call with the shared key check, quota cool-down and 503 retries. Returns the parsed response body. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function postGemini(model: string, body: unknown, timeoutMs: number): Promise<any> {
   if (!GEMINI_API_KEY) {
     throw new GeminiNotConfiguredError("GEMINI_API_KEY is not set — add it to .env to enable this feature");
   }
@@ -98,18 +100,11 @@ async function callGemini<T>(parts: ContentPart[], schema: JsonSchema, timeoutMs
     throw new GeminiQuotaExhaustedError(`Gemini quota exhausted — not retrying for another ${seconds}s`);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const res = await fetchWithRetry(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schema,
-        temperature: 0.3,
-      },
-    }),
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
   });
 
@@ -122,8 +117,22 @@ async function callGemini<T>(parts: ContentPart[], schema: JsonSchema, timeoutMs
     }
     throw new Error(`Gemini API error (${res.status}): ${body.slice(0, 500)}`);
   }
+  return res.json();
+}
 
-  const data = await res.json();
+async function callGemini<T>(parts: ContentPart[], schema: JsonSchema, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
+  const data = await postGemini(
+    GEMINI_MODEL,
+    {
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0.3,
+      },
+    },
+    timeoutMs
+  );
   const text: string | undefined = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
     throw new Error("Gemini returned no content (may have been blocked by safety filters)");
@@ -150,4 +159,51 @@ export async function generateStructuredFromImage<T>(
   options: { timeoutMs?: number } = {}
 ): Promise<T> {
   return callGemini<T>([{ text: prompt }, { inlineData: { mimeType: image.mimeType, data: image.base64Data } }], schema, options.timeoutMs);
+}
+
+/** Text-to-speech model (separate from GEMINI_MODEL; it has its own quota). */
+const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
+
+/**
+ * Speaks Arabic text with Gemini's text-to-speech — pronunciation audio for
+ * vocabulary, not a grammar claim. Returns a playable WAV. Callers cache the
+ * result (see /api/speech), so each word is generated once.
+ */
+export async function generateArabicSpeech(text: string): Promise<Buffer> {
+  const data = await postGemini(
+    GEMINI_TTS_MODEL,
+    {
+      contents: [{ role: "user", parts: [{ text: `Say clearly and slowly, in Modern Standard Arabic, exactly as vowelled: ${text}` }] }],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
+      },
+    },
+    30_000
+  );
+  const part = data.candidates?.[0]?.content?.parts?.find((p: { inlineData?: unknown }) => p.inlineData)?.inlineData as { mimeType?: string; data?: string } | undefined;
+  if (!part?.data) throw new Error("Gemini returned no audio");
+  const pcm = Buffer.from(part.data, "base64");
+  // Raw 16-bit little-endian PCM ("audio/L16;codec=pcm;rate=24000") — wrap it in a WAV header so browsers can play it.
+  const rate = Number(/rate=(\d+)/.exec(part.mimeType ?? "")?.[1] ?? 24000);
+  return pcmToWav(pcm, rate);
+}
+
+export function pcmToWav(pcm: Buffer, sampleRate: number, channels = 1, bitsPerSample = 16): Buffer {
+  const blockAlign = (channels * bitsPerSample) / 8;
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + pcm.length, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16); // fmt chunk size
+  header.writeUInt16LE(1, 20); // PCM
+  header.writeUInt16LE(channels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * blockAlign, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([header, pcm]);
 }

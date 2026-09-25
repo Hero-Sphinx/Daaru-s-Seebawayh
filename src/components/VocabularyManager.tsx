@@ -6,7 +6,7 @@ import type { VocabularyCardDTO } from "@/lib/vocabulary";
 import { parseBulkVocabularyText } from "@/lib/vocabulary";
 import type { EnrichCandidate } from "@/app/api/vocabulary/enrich/route";
 import { XIcon, VolumeIcon } from "@/components/icons";
-import { speakArabic } from "@/lib/speech";
+import { listenArabic } from "@/lib/speech";
 import { playClip } from "@/lib/audio-player";
 import { wordAudioUrl } from "@/lib/quran/audio";
 import { isArabicWord } from "@/lib/arabic-script";
@@ -64,16 +64,12 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
 
   const [speechError, setSpeechError] = useState<string | null>(null);
 
-  async function handleSpeak(wordAr: string) {
-    const result = await speakArabic(wordAr);
-    if (!result.spoke) {
-      setSpeechError(
-        result.reason === "no-arabic-voice"
-          ? "No Arabic voice is installed on this device, so it can't be read aloud. On Windows, add one under Settings → Time & Language → Speech; Microsoft Edge also ships with more voices by default than some other browsers."
-          : "Your browser doesn't support text-to-speech."
-      );
-    }
+  async function handleSpeak(wordAr: string, quran?: { chapter: number; verse: number; word: number } | null) {
+    setSpeechError(null);
+    const result = await listenArabic(wordAr, quran);
+    if (!result.ok) setSpeechError(result.message ?? "Couldn't play the pronunciation.");
   }
+
 
   /**
    * Resolves whatever the user typed — Arabic script, or a transliteration
@@ -356,7 +352,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
                       {item.wordAr}
                     </span>
                     <button
-                      onClick={() => handleSpeak(item.wordAr)}
+                      onClick={() => handleSpeak(item.wordAr, item.quranOccurrence)}
                       aria-label={`Listen to ${item.wordAr}`}
                       className="text-emerald-600 transition hover:text-emerald-500 dark:text-emerald-400"
                     >
