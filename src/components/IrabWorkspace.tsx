@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { DependencyEdge, IrabToken, RoleCode, SentenceAnalysis } from "@/types/irab";
+import { buildIrabSentence } from "@/lib/irab/irab-sentence";
 
 const ROLE_STYLES: Record<RoleCode, { bg: string; text: string; ring: string }> = {
   FIL: { bg: "bg-sky-100 dark:bg-sky-950", text: "text-sky-800 dark:text-sky-200", ring: "ring-sky-400" },
@@ -11,6 +12,24 @@ const ROLE_STYLES: Record<RoleCode, { bg: string; text: string; ring: string }> 
   KHABAR: { bg: "bg-amber-100 dark:bg-amber-950", text: "text-amber-800 dark:text-amber-200", ring: "ring-amber-400" },
   HARF_JARR: { bg: "bg-rose-100 dark:bg-rose-950", text: "text-rose-800 dark:text-rose-200", ring: "ring-rose-400" },
   MAJROOR: { bg: "bg-indigo-100 dark:bg-indigo-950", text: "text-indigo-800 dark:text-indigo-200", ring: "ring-indigo-400" },
+  NAAT: { bg: "bg-fuchsia-100 dark:bg-fuchsia-950", text: "text-fuchsia-800 dark:text-fuchsia-200", ring: "ring-fuchsia-400" },
+  INNA: { bg: "bg-orange-100 dark:bg-orange-950", text: "text-orange-800 dark:text-orange-200", ring: "ring-orange-400" },
+  ISM_INNA: { bg: "bg-lime-100 dark:bg-lime-950", text: "text-lime-800 dark:text-lime-200", ring: "ring-lime-400" },
+  KHABAR_INNA: { bg: "bg-yellow-100 dark:bg-yellow-950", text: "text-yellow-800 dark:text-yellow-200", ring: "ring-yellow-400" },
+  KANA: { bg: "bg-sky-100 dark:bg-sky-950", text: "text-sky-800 dark:text-sky-200", ring: "ring-sky-500" },
+  ISM_KANA: { bg: "bg-emerald-100 dark:bg-emerald-950", text: "text-emerald-800 dark:text-emerald-200", ring: "ring-emerald-500" },
+  KHABAR_KANA: { bg: "bg-amber-100 dark:bg-amber-950", text: "text-amber-800 dark:text-amber-200", ring: "ring-amber-500" },
+  ISM_LA: { bg: "bg-lime-100 dark:bg-lime-950", text: "text-lime-800 dark:text-lime-200", ring: "ring-lime-500" },
+  KHABAR_LA: { bg: "bg-yellow-100 dark:bg-yellow-950", text: "text-yellow-800 dark:text-yellow-200", ring: "ring-yellow-500" },
+  NAIB_FAAIL: { bg: "bg-emerald-100 dark:bg-emerald-950", text: "text-emerald-800 dark:text-emerald-200", ring: "ring-emerald-300" },
+  MUDAF_ILAYH: { bg: "bg-violet-100 dark:bg-violet-950", text: "text-violet-800 dark:text-violet-200", ring: "ring-violet-400" },
+  MATUF: { bg: "bg-cyan-100 dark:bg-cyan-950", text: "text-cyan-800 dark:text-cyan-200", ring: "ring-cyan-400" },
+  BADAL: { bg: "bg-pink-100 dark:bg-pink-950", text: "text-pink-800 dark:text-pink-200", ring: "ring-pink-400" },
+  MAFUL_MUTLAQ: { bg: "bg-purple-100 dark:bg-purple-950", text: "text-purple-800 dark:text-purple-200", ring: "ring-purple-500" },
+  HAL: { bg: "bg-orange-50 dark:bg-orange-950", text: "text-orange-800 dark:text-orange-200", ring: "ring-orange-300" },
+  TAMYIZ: { bg: "bg-teal-50 dark:bg-teal-950", text: "text-teal-800 dark:text-teal-200", ring: "ring-teal-300" },
+  MAFUL_FIH: { bg: "bg-sky-50 dark:bg-sky-950", text: "text-sky-800 dark:text-sky-200", ring: "ring-sky-300" },
+  HARF: { bg: "bg-stone-100 dark:bg-stone-800", text: "text-stone-700 dark:text-stone-200", ring: "ring-stone-400" },
 };
 
 const FALLBACK_STYLE = { bg: "bg-neutral-100 dark:bg-neutral-800", text: "text-neutral-800 dark:text-neutral-200", ring: "ring-neutral-400" };
@@ -101,8 +120,11 @@ export default function IrabWorkspace({ sentence }: { sentence: SentenceAnalysis
     <div className="flex flex-col gap-8">
       {/* 1. Color-coded sentence */}
       <section>
-        <p className="mb-2 text-sm text-neutral-500">{sentence.sourceLabel}</p>
-        <div dir="rtl" className="flex flex-wrap items-baseline gap-3 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6 text-4xl leading-loose">
+        <p className="mb-2 text-sm text-muted">{sentence.sourceLabel}</p>
+        <div
+          dir="rtl"
+          className="arabic-display flex flex-wrap items-baseline gap-3 rounded-lg border border-amber-200/60 bg-parchment-100 p-6 leading-loose dark:border-amber-900/40 dark:bg-parchment-900"
+        >
           {sentence.tokens
             .slice()
             .sort((a, b) => a.positionInUnit - b.positionInUnit)
@@ -123,6 +145,14 @@ export default function IrabWorkspace({ sentence }: { sentence: SentenceAnalysis
               );
             })}
         </div>
+        {sentence.translationEn && (
+          <p className="mt-2 text-sm text-muted">
+            {sentence.translationEn}
+            {sentence.translationSource === "gemini" && (
+              <span className="ml-1.5 text-xs text-purple-600 dark:text-purple-400">(AI-suggested translation — unverified)</span>
+            )}
+          </p>
+        )}
       </section>
 
       {/* 2. Expandable token cards */}
@@ -134,12 +164,13 @@ export default function IrabWorkspace({ sentence }: { sentence: SentenceAnalysis
             const edge = edgeByToken.get(token.id);
             const style = styleFor(edge?.role.code);
             const isSelected = selectedTokenId === token.id;
+            const irabSentence = buildIrabSentence(token, edge?.role);
             return (
               <button
                 key={token.id}
                 onClick={() => setSelectedTokenId(token.id)}
-                className={`text-left rounded-xl border p-4 transition ${
-                  isSelected ? `border-transparent ring-2 ${style.ring} ${style.bg}` : "border-neutral-200 dark:border-neutral-800"
+                className={`rounded-md border bg-white p-4 text-left transition dark:bg-parchment-800 ${
+                  isSelected ? `border-transparent ring-2 ${style.ring} ${style.bg}` : "border-border"
                 }`}
               >
                 <div dir="rtl" className="font-arabic text-2xl mb-2">
@@ -153,6 +184,15 @@ export default function IrabWorkspace({ sentence }: { sentence: SentenceAnalysis
                   {edge && <Row label="Role" value={`${edge.role.nameEn} (${edge.role.nameAr})`} />}
                   {edge?.role.ruleReference && <Row label="Rule" value={edge.role.ruleReference} />}
                 </dl>
+                {irabSentence && (
+                  <div className="mt-3 space-y-1.5 border-t border-stone-200 pt-3 text-sm dark:border-stone-700/60">
+                    <p dir="rtl" className="font-arabic text-lg leading-relaxed text-emerald-900 dark:text-amber-200">
+                      {irabSentence.ar}
+                    </p>
+                    <p className="italic text-muted">{irabSentence.transliteration}</p>
+                    <p className="text-muted">{irabSentence.en}</p>
+                  </div>
+                )}
               </button>
             );
           })}
@@ -160,7 +200,7 @@ export default function IrabWorkspace({ sentence }: { sentence: SentenceAnalysis
 
       {/* 3. Dependency tree diagram */}
       <section>
-        <h3 className="mb-3 text-sm font-medium text-neutral-500">Dependency tree</h3>
+        <h3 className="mb-3 text-sm font-medium text-muted">Dependency tree</h3>
         <svg
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           width="100%"

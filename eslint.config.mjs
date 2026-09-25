@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // services/camel/ is a separate Python project; its .venv bundles
+    // vendored JS (sklearn/torch browser assets) that isn't ours to lint.
+    "services/**",
   ]),
 ]);
 

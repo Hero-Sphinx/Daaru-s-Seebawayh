@@ -1,27 +1,135 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: toggled via SiteHeader, not just OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. A restrained, print-inspired palette: warm paper, ink,
+ * one deep green for identity and actions, a muted gold used sparingly for
+ * emphasis. Components use Tailwind's stone/emerald/amber scales, which
+ * these tokens are tuned to sit alongside.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f3;
+  --foreground: #23201b;
+  --surface: #ffffff;
+  --border: #e7e2d7;
+  --muted: #6b645a;
+  --brand: #1f4d3a;
+  --brand-contrast: #ffffff;
+  --accent: #a67c2e;
+  /* Arabic text scale (percent / 100) — set from the header control. */
+  --arabic-scale: 1;
+}
+
+.dark {
+  --background: #15130f;
+  --foreground: #ece6d9;
+  --surface: #1e1b16;
+  --border: #37322a;
+  --muted: #a39b8d;
+  --brand: #7fb89a;
+  --brand-contrast: #10201a;
+  --accent: #d4ad63;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-arabic: var(--font-amiri);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-emerald-850: #044234;
+  --color-emerald-950: #02241c;
+  --color-amber-450: #f1a82d;
+  --color-parchment-50: #faf8f3;
+  --color-parchment-100: #f4f0e6;
+  --color-parchment-200: #e9e2d2;
+  --color-parchment-800: #1e1b16;
+  --color-parchment-900: #15130f;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Arabic text scale. Every Arabic element in the app carries `font-arabic`,
+ * so one rule scales all of it — text, word chips, reader buttons — while
+ * keeping each element's own relative size. `zoom` (not font-size) so an
+ * element's padding scales with its text; nested Arabic isn't scaled twice;
+ * the dependency-tree SVG keeps its fixed geometry.
+ */
+.font-arabic {
+  zoom: var(--arabic-scale);
+  /* Amiri's marks sit high and low — give lines room so tashkeel is never clipped. */
+  line-height: 1.9;
+}
+.font-arabic .font-arabic,
+svg .font-arabic,
+.site-chrome .font-arabic {
+  zoom: 1;
+}
+
+/* Large multi-word Arabic lines (I'rab sentence, flashcard, Qur'an verses). */
+.arabic-display {
+  font-size: 2.25rem;
+}
+
+.arabic-text {
+  direction: rtl;
+  text-align: right;
+  line-height: 2.2;
+}
+
+.card-flip {
+  perspective: 1000px;
+}
+.card-inner {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+.card-flip.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+.card-front,
+.card-back {
+  backface-visibility: hidden;
+}
+.card-back {
+  transform: rotateY(180deg);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

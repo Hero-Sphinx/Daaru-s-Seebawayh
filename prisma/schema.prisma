@@ -1,0 +1,460 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model case_signs {
+  id             Int      @id @default(autoincrement())
+  case_type      String
+  sign_ar        String
+  sign_en        String
+  description_ar String?
+  tokens         tokens[]
+}
+
+model dependency_edges {
+  id                                            BigInt            @id @default(autoincrement())
+  token_id                                      BigInt            @unique
+  head_token_id                                 BigInt?
+  grammatical_role_id                           Int
+  relation_label_raw                            String?
+  created_at                                    DateTime          @default(now()) @db.Timestamptz(6)
+  grammatical_roles                             grammatical_roles @relation(fields: [grammatical_role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens_dependency_edges_head_token_idTotokens tokens?           @relation("dependency_edges_head_token_idTotokens", fields: [head_token_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tokens_dependency_edges_token_idTotokens      tokens            @relation("dependency_edges_token_idTotokens", fields: [token_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([head_token_id], map: "idx_dependency_head")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model extraction_jobs {
+  id                BigInt            @id @default(autoincrement())
+  document_id       String            @db.Uuid
+  job_type          String
+  status            String            @default("queued")
+  started_at        DateTime?         @db.Timestamptz(6)
+  completed_at      DateTime?         @db.Timestamptz(6)
+  error_message     String?
+  library_documents library_documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model fawaid {
+  id                   BigInt              @id @default(autoincrement())
+  quran_verse_id       BigInt?
+  library_text_unit_id BigInt?
+  related_token_id     BigInt?
+  category             String
+  title                String
+  body_ar              String?
+  body_en              String?
+  created_by           String
+  created_at           DateTime            @default(now()) @db.Timestamptz(6)
+  library_text_units   library_text_units? @relation(fields: [library_text_unit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quran_verses         quran_verses?       @relation(fields: [quran_verse_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tokens               tokens?             @relation(fields: [related_token_id], references: [id], onUpdate: NoAction)
+}
+
+model grammatical_roles {
+  id               Int                @id @default(autoincrement())
+  code             String             @unique
+  name_ar          String
+  name_en          String
+  category         String?
+  rule_reference   String?
+  dependency_edges dependency_edges[]
+}
+
+model lemmas {
+  id                    BigInt             @id @default(autoincrement())
+  lemma_ar              String
+  lemma_transliteration String?
+  root_id               BigInt?
+  pos_tag_id            Int?
+  verb_form_id          Int?
+  plural_form_ar        String?
+  meaning_en            String?
+  meaning_ar            String?
+  frequency_rank        Int?
+  created_at            DateTime           @default(now()) @db.Timestamptz(6)
+  pos_tags              pos_tags?          @relation(fields: [pos_tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roots                 roots?             @relation(fields: [root_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  verb_forms            verb_forms?        @relation(fields: [verb_form_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens                tokens[]
+  vocabulary_items      vocabulary_items[]
+
+  @@unique([lemma_ar, root_id, pos_tag_id], map: "uq_lemmas_natural")
+  @@index([lemma_ar(ops: raw("gin_trgm_ops"))], map: "idx_lemmas_ar_trgm", type: Gin)
+  @@index([root_id], map: "idx_lemmas_root")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model library_documents {
+  id                      String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  owner_user_id           String?                   @db.Uuid
+  title                   String
+  author                  String?
+  file_type               String
+  storage_path            String
+  page_count              Int?
+  language                String?                   @default("ar")
+  processing_status       String                    @default("pending")
+  uploaded_at             DateTime                  @default(now()) @db.Timestamptz(6)
+  summary_en              String?
+  summary_ar              String?
+  summary_generated_at    DateTime?                 @db.Timestamptz(6)
+  extraction_jobs         extraction_jobs[]
+  library_annotations     library_annotations[]
+  library_document_shares library_document_shares[]
+  users                   users?                    @relation(fields: [owner_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  library_text_units      library_text_units[]
+  quiz_questions          quiz_questions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model library_text_units {
+  id                  BigInt                @id @default(autoincrement())
+  document_id         String                @db.Uuid
+  page_number         Int?
+  sequence_in_doc     Int
+  raw_text            String
+  processing_status   String                @default("pending")
+  extraction_source   String                @default("pdf_text")
+  raw_text_normalized String?               @default(dbgenerated("translate(regexp_replace(raw_text, ((((((((('['::text || chr(1611)) || '-'::text) || chr(1631)) || chr(1648)) || chr(1750)) || '-'::text) || chr(1773)) || chr(1600)) || ']'::text), ''::text, 'g'::text), (((chr(1571) || chr(1573)) || chr(1570)) || chr(1649)), repeat(chr(1575), 4))"))
+  fawaid              fawaid[]
+  library_annotations library_annotations[]
+  library_documents   library_documents     @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tokens              tokens[]
+
+  @@unique([document_id, sequence_in_doc])
+  @@index([raw_text_normalized(ops: raw("gin_trgm_ops"))], map: "idx_library_text_units_normalized_trgm", type: Gin)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model pos_tags {
+  id       Int      @id @default(autoincrement())
+  tagset   String
+  code     String
+  name_ar  String
+  name_en  String
+  category String?
+  lemmas   lemmas[]
+  tokens   tokens[]
+
+  @@unique([tagset, code])
+}
+
+model quiz_attempts {
+  id               BigInt          @id @default(autoincrement())
+  user_id          String          @db.Uuid
+  question_id      BigInt?
+  template_id      BigInt
+  user_answer      Json
+  is_correct       Boolean
+  response_time_ms Int?
+  answered_at      DateTime        @default(now()) @db.Timestamptz(6)
+  quiz_questions   quiz_questions? @relation(fields: [question_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quiz_templates   quiz_templates  @relation(fields: [template_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, answered_at], map: "idx_quiz_attempts_user")
+}
+
+model quiz_questions {
+  id                         BigInt             @id @default(autoincrement())
+  template_id                BigInt
+  source_token_id            BigInt?
+  source_vocabulary_item_id  BigInt?
+  question_payload           Json
+  correct_answer             Json
+  distractors                Json?
+  difficulty_tier            String
+  created_at                 DateTime           @default(now()) @db.Timestamptz(6)
+  source_library_document_id String?            @db.Uuid
+  quiz_attempts              quiz_attempts[]
+  library_documents          library_documents? @relation(fields: [source_library_document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tokens                     tokens?            @relation(fields: [source_token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vocabulary_items           vocabulary_items?  @relation(fields: [source_vocabulary_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quiz_templates             quiz_templates     @relation(fields: [template_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([source_library_document_id], map: "idx_quiz_questions_library_document")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quiz_templates {
+  id                   BigInt           @id @default(autoincrement())
+  quiz_type            String
+  difficulty_tier      String
+  template_body        Json
+  explanation_template String?
+  rule_reference       String?
+  created_at           DateTime         @default(now()) @db.Timestamptz(6)
+  code                 String?          @unique
+  quiz_attempts        quiz_attempts[]
+  quiz_questions       quiz_questions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quran_chapters {
+  id                   Int            @id @db.SmallInt
+  name_ar              String
+  name_en              String
+  revelation_place     String?
+  verse_count          Int            @db.SmallInt
+  name_transliteration String?
+  quran_verses         quran_verses[]
+}
+
+model quran_verses {
+  id             BigInt         @id @default(autoincrement())
+  chapter_id     Int            @db.SmallInt
+  verse_number   Int            @db.SmallInt
+  text_uthmani   String
+  text_simple    String?
+  fawaid         fawaid[]
+  quran_chapters quran_chapters @relation(fields: [chapter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens         tokens[]
+
+  @@unique([chapter_id, verse_number])
+}
+
+model roots {
+  id                 BigInt   @id @default(autoincrement())
+  root_letters       String   @unique
+  letter_count       Int      @db.SmallInt
+  transliteration    String?
+  meaning_summary_en String?
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  lemmas             lemmas[]
+  tokens             tokens[]
+
+  @@index([root_letters(ops: raw("gin_trgm_ops"))], map: "idx_roots_letters_trgm", type: Gin)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model srs_cards {
+  id                 BigInt           @id @default(autoincrement())
+  vocabulary_item_id BigInt
+  user_id            String           @db.Uuid
+  card_type          String
+  easiness_factor    Decimal          @default(2.5) @db.Decimal(4, 2)
+  interval_days      Int              @default(0)
+  repetitions        Int              @default(0)
+  due_at             DateTime         @default(now()) @db.Timestamptz(6)
+  last_reviewed_at   DateTime?        @db.Timestamptz(6)
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  leitner_box        Int              @default(1) @db.SmallInt
+  users              users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vocabulary_items   vocabulary_items @relation(fields: [vocabulary_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  srs_review_log     srs_review_log[]
+
+  @@unique([vocabulary_item_id, card_type])
+  @@index([user_id, due_at], map: "idx_srs_due")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model srs_review_log {
+  id                BigInt    @id @default(autoincrement())
+  card_id           BigInt
+  user_id           String    @db.Uuid
+  quality_rating    Int       @db.SmallInt
+  previous_interval Int
+  new_interval      Int
+  previous_ef       Decimal   @db.Decimal(4, 2)
+  new_ef            Decimal   @db.Decimal(4, 2)
+  reviewed_at       DateTime  @default(now()) @db.Timestamptz(6)
+  srs_cards         srs_cards @relation(fields: [card_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([card_id, reviewed_at], map: "idx_review_log_card")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tokens {
+  id                                                      BigInt              @id @default(autoincrement())
+  quran_verse_id                                          BigInt?
+  library_text_unit_id                                    BigInt?
+  position_in_unit                                        Int
+  surface_form                                            String
+  surface_form_bare                                       String?
+  lemma_id                                                BigInt?
+  root_id                                                 BigInt?
+  pos_tag_id                                              Int?
+  case_sign_id                                            Int?
+  gender                                                  String?
+  grammatical_number                                      String?
+  person                                                  Int?                @db.SmallInt
+  definiteness                                            String?
+  verb_aspect                                             String?
+  verb_mood                                               String?
+  parent_segment_token_id                                 BigInt?
+  analysis_source                                         String
+  raw_features                                            Json?
+  created_at                                              DateTime            @default(now()) @db.Timestamptz(6)
+  verb_voice                                              String?
+  grammatical_case                                        String?
+  segment_index                                           Int?                @db.SmallInt
+  segment_type                                            String?
+  dependency_edges_dependency_edges_head_token_idTotokens dependency_edges[]  @relation("dependency_edges_head_token_idTotokens")
+  dependency_edges_dependency_edges_token_idTotokens      dependency_edges?   @relation("dependency_edges_token_idTotokens")
+  fawaid                                                  fawaid[]
+  quiz_questions                                          quiz_questions[]
+  case_signs                                              case_signs?         @relation(fields: [case_sign_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lemmas                                                  lemmas?             @relation(fields: [lemma_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  library_text_units                                      library_text_units? @relation(fields: [library_text_unit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tokens                                                  tokens?             @relation("tokensTotokens", fields: [parent_segment_token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_tokens                                            tokens[]            @relation("tokensTotokens")
+  pos_tags                                                pos_tags?           @relation(fields: [pos_tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quran_verses                                            quran_verses?       @relation(fields: [quran_verse_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  roots                                                   roots?              @relation(fields: [root_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vocabulary_items                                        vocabulary_items[]
+
+  @@index([lemma_id], map: "idx_tokens_lemma")
+  @@index([library_text_unit_id, position_in_unit], map: "idx_tokens_library_unit")
+  @@index([quran_verse_id, position_in_unit], map: "idx_tokens_quran_verse")
+  @@index([root_id], map: "idx_tokens_root")
+  @@index([parent_segment_token_id], map: "idx_tokens_parent_segment")
+}
+
+model user_quiz_stats {
+  user_id          String    @db.Uuid
+  quiz_type        String
+  difficulty_tier  String
+  total_attempts   Int       @default(0)
+  correct_attempts Int       @default(0)
+  current_streak   Int       @default(0)
+  last_attempt_at  DateTime? @db.Timestamptz(6)
+  users            users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, quiz_type, difficulty_tier])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                      String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email                   String                    @unique
+  password_hash           String
+  display_name            String?
+  native_language         String?                   @default("en")
+  arabic_level            String?                   @default("beginner")
+  timezone                String?                   @default("UTC")
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  last_login_at           DateTime?                 @db.Timestamptz(6)
+  srs_algorithm           String                    @default("sm2")
+  library_annotations     library_annotations[]
+  library_document_shares library_document_shares[]
+  library_documents       library_documents[]
+  quiz_attempts           quiz_attempts[]
+  sessions                sessions[]
+  password_reset_tokens   password_reset_tokens[]
+  srs_cards               srs_cards[]
+  srs_review_log          srs_review_log[]
+  user_quiz_stats         user_quiz_stats[]
+  vocabulary_items        vocabulary_items[]
+}
+
+model verb_forms {
+  id           Int      @id @default(autoincrement())
+  form_number  Int      @unique @db.SmallInt
+  wazn_pattern String
+  name_en      String?
+  lemmas       lemmas[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model vocabulary_items {
+  id                     BigInt           @id @default(autoincrement())
+  user_id                String           @db.Uuid
+  lemma_id               BigInt?
+  custom_word_ar         String?
+  custom_root            String?
+  example_sentence_ar    String?
+  example_sentence_en    String?
+  audio_url              String?
+  notes                  String?
+  source                 String
+  source_token_id        BigInt?
+  created_at             DateTime         @default(now()) @db.Timestamptz(6)
+  custom_meaning_en      String?
+  custom_transliteration String?
+  quiz_questions         quiz_questions[]
+  srs_cards              srs_cards[]
+  lemmas                 lemmas?          @relation(fields: [lemma_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens                 tokens?          @relation(fields: [source_token_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                  users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_vocab_user")
+}
+
+model sessions {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String   @db.Uuid
+  token_hash String   @unique
+  user_agent String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  expires_at DateTime @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_sessions_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model auth_attempts {
+  id         BigInt   @id @default(autoincrement())
+  bucket     String
+  kind       String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([kind, bucket, created_at], map: "idx_auth_attempts_bucket")
+}
+
+model password_reset_tokens {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_password_reset_tokens_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model library_annotations {
+  id                 BigInt             @id @default(autoincrement())
+  document_id        String             @db.Uuid
+  text_unit_id       BigInt
+  user_id            String             @db.Uuid
+  start_offset       Int
+  end_offset         Int
+  quote              String
+  note               String?
+  visibility         String             @default("shared")
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  library_documents  library_documents  @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  library_text_units library_text_units @relation(fields: [text_unit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([document_id], map: "idx_library_annotations_document")
+  @@index([text_unit_id], map: "idx_library_annotations_unit")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model library_document_shares {
+  document_id       String            @db.Uuid
+  user_id           String            @db.Uuid
+  role              String
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  library_documents library_documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([document_id, user_id])
+  @@index([user_id], map: "idx_library_document_shares_user")
+}

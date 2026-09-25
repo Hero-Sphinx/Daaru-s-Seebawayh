@@ -1,5 +1,5 @@
 -- ============================================================================
--- Al-Lisan Platform — Core PostgreSQL Schema
+-- Daaru-s-Seebawayh Platform — Core PostgreSQL Schema
 -- Deterministic, non-LLM Arabic linguistics platform
 -- ============================================================================
 -- Design principle: Quranic Corpus tokens (QADT) and Farasa-parsed library
@@ -23,9 +23,45 @@ CREATE TABLE users (
     native_language     TEXT DEFAULT 'en',
     arabic_level        TEXT CHECK (arabic_level IN ('beginner','intermediate','advanced','classical')) DEFAULT 'beginner',
     timezone            TEXT DEFAULT 'UTC',
+    -- Review scheduler preference (src/lib/srs/sm2.ts | leitner.ts).
+    srs_algorithm       TEXT NOT NULL DEFAULT 'sm2' CHECK (srs_algorithm IN ('sm2','leitner')),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at       TIMESTAMPTZ
 );
+
+-- Server-side sessions (src/lib/auth.ts). The cookie holds a random opaque
+-- token; only its SHA-256 hash is stored here, so a leaked DB dump can't be
+-- replayed as live sessions. Deleting a row is an immediate, real logout.
+CREATE TABLE sessions (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash          TEXT NOT NULL UNIQUE,
+    user_agent          TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at          TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_sessions_user ON sessions (user_id);
+
+-- Failed sign-ins / reset requests, for rate limiting (src/lib/rate-limit.ts).
+-- bucket is 'email:<address>' or 'ip:<address>'.
+CREATE TABLE auth_attempts (
+    id                  BIGSERIAL PRIMARY KEY,
+    bucket              TEXT NOT NULL,
+    kind                TEXT NOT NULL CHECK (kind IN ('login','reset')),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_auth_attempts_bucket ON auth_attempts (kind, bucket, created_at);
+
+-- Single-use password reset links; only the token's SHA-256 is stored.
+CREATE TABLE password_reset_tokens (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash          TEXT NOT NULL UNIQUE,
+    expires_at          TIMESTAMPTZ NOT NULL,
+    used_at             TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);
 
 -- ============================================================================
 -- 2. LINGUISTIC REFERENCE / TAXONOMY TABLES
@@ -98,6 +134,8 @@ CREATE TABLE lemmas (
 );
 CREATE INDEX idx_lemmas_root ON lemmas (root_id);
 CREATE INDEX idx_lemmas_ar_trgm ON lemmas USING gin (lemma_ar gin_trgm_ops);
+-- Natural key so corpus imports can upsert idempotently (PG15+).
+CREATE UNIQUE INDEX uq_lemmas_natural ON lemmas (lemma_ar, root_id, pos_tag_id) NULLS NOT DISTINCT;
 
 -- ============================================================================
 -- 3. QURANIC CORPUS (imported verbatim from corpus.quran.com / QADT)
@@ -106,7 +144,8 @@ CREATE INDEX idx_lemmas_ar_trgm ON lemmas USING gin (lemma_ar gin_trgm_ops);
 CREATE TABLE quran_chapters (
     id                  SMALLINT PRIMARY KEY,          -- surah number 1-114
     name_ar             TEXT NOT NULL,
-    name_en             TEXT NOT NULL,
+    name_en             TEXT NOT NULL,                  -- English meaning, e.g. 'The Opening'
+    name_transliteration TEXT,                          -- e.g. 'Al-Fatihah'
     revelation_place    TEXT CHECK (revelation_place IN ('meccan','medinan')),
     verse_count         SMALLINT NOT NULL
 );
@@ -130,12 +169,21 @@ CREATE TABLE library_documents (
     title               TEXT NOT NULL,
     author              TEXT,
     file_type           TEXT NOT NULL CHECK (file_type IN ('pdf','epub')),
-    storage_path        TEXT NOT NULL,                 -- object storage key/URL
+    storage_path        TEXT NOT NULL,                 -- original filename only; the PDF
+                                                          -- itself isn't retained (no object
+                                                          -- storage configured) — only its
+                                                          -- extracted text is kept, in
+                                                          -- library_text_units
     page_count          INT,
     language            TEXT DEFAULT 'ar',
     processing_status   TEXT NOT NULL DEFAULT 'pending'
                          CHECK (processing_status IN ('pending','processing','completed','failed')),
-    uploaded_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+    uploaded_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Document-level summary (FR-2.2). Gemini-generated — see README.md's AI
+    -- usage policy; always shown labeled "AI-generated, unverified".
+    summary_en          TEXT,
+    summary_ar          TEXT,
+    summary_generated_at TIMESTAMPTZ
 );
 
 -- One row per sentence/paragraph unit extracted from a document, prior to
@@ -146,15 +194,68 @@ CREATE TABLE library_text_units (
     page_number         INT,
     sequence_in_doc      INT NOT NULL,
     raw_text            TEXT NOT NULL,
+    -- 'ocr' when unpdf found no embedded text layer on this page and Gemini
+    -- vision transcribed the page image instead (src/lib/library/extract-pdf.ts)
+    -- — an AI-extracted, unverified transcription, unlike 'pdf_text'. Every
+    -- reader/quiz/Fawa'id surface that shows this unit's text must label it
+    -- accordingly when this is 'ocr'.
+    extraction_source   TEXT NOT NULL DEFAULT 'pdf_text'
+                         CHECK (extraction_source IN ('pdf_text','ocr')),
     processing_status   TEXT NOT NULL DEFAULT 'pending'
                          CHECK (processing_status IN ('pending','tokenized','failed')),
+    -- Diacritic-insensitive search text. MUST match normalizeArabicForSearch()
+    -- in src/lib/arabic-normalize.ts (strip harakat/dagger alif/Qur'anic
+    -- marks/tatweel; fold أ إ آ ٱ to ا).
+    raw_text_normalized TEXT GENERATED ALWAYS AS (
+        translate(
+            regexp_replace(raw_text, '[' || chr(1611) || '-' || chr(1631) || chr(1648) || chr(1750) || '-' || chr(1773) || chr(1600) || ']', '', 'g'),
+            chr(1571) || chr(1573) || chr(1570) || chr(1649), repeat(chr(1575), 4))
+    ) STORED,
     UNIQUE (document_id, sequence_in_doc)
 );
+-- pg_trgm: substring + regex search over the normalized text (library search).
+CREATE INDEX idx_library_text_units_normalized_trgm ON library_text_units USING gin (raw_text_normalized gin_trgm_ops);
+
+-- Sharing + annotations (ROADMAP.md Phase 5).
+-- Who else can open a document. The owner (library_documents.owner_user_id)
+-- is never listed here; 'viewer' can read the text and everyone's shared
+-- notes, 'annotator' can also add notes of their own.
+CREATE TABLE library_document_shares (
+    document_id         UUID NOT NULL REFERENCES library_documents(id) ON DELETE CASCADE,
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role                TEXT NOT NULL CHECK (role IN ('viewer','annotator')),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (document_id, user_id)
+);
+CREATE INDEX idx_library_document_shares_user ON library_document_shares (user_id);
+
+-- A highlighted passage on one page plus an optional note. Offsets index
+-- into library_text_units.raw_text; quote is kept verbatim so the note still
+-- makes sense (and can be re-anchored) if offsets ever drift.
+CREATE TABLE library_annotations (
+    id                  BIGSERIAL PRIMARY KEY,
+    document_id         UUID NOT NULL REFERENCES library_documents(id) ON DELETE CASCADE,
+    text_unit_id        BIGINT NOT NULL REFERENCES library_text_units(id) ON DELETE CASCADE,
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    start_offset        INT NOT NULL CHECK (start_offset >= 0),
+    end_offset          INT NOT NULL,
+    quote               TEXT NOT NULL,
+    note                TEXT,
+    -- 'private' notes are visible only to their author, even on a shared document.
+    visibility          TEXT NOT NULL DEFAULT 'shared' CHECK (visibility IN ('private','shared')),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT chk_annotation_range CHECK (end_offset > start_offset)
+);
+CREATE INDEX idx_library_annotations_unit ON library_annotations (text_unit_id);
+CREATE INDEX idx_library_annotations_document ON library_annotations (document_id);
 
 CREATE TABLE extraction_jobs (
     id                  BIGSERIAL PRIMARY KEY,
     document_id         UUID NOT NULL REFERENCES library_documents(id) ON DELETE CASCADE,
-    job_type            TEXT NOT NULL CHECK (job_type IN ('tokenize','pos_tag','dependency_parse','fawaid_extract')),
+    job_type            TEXT NOT NULL CHECK (job_type IN ('tokenize','pos_tag','dependency_parse','fawaid_extract',
+                         -- Added for the actual pipeline built (src/app/api/library/):
+                         'text_extraction','summarize')),
     status              TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','running','completed','failed')),
     started_at          TIMESTAMPTZ,
     completed_at        TIMESTAMPTZ,
@@ -188,6 +289,17 @@ CREATE TABLE tokens (
     definiteness                TEXT CHECK (definiteness IN ('definite','indefinite')),
     verb_aspect                 TEXT CHECK (verb_aspect IN ('perfect','imperfect','imperative')),
     verb_mood                   TEXT CHECK (verb_mood IN ('indicative','subjunctive','jussive')),
+    verb_voice                  TEXT CHECK (verb_voice IN ('active','passive')),
+    -- Morphological case as the source annotates it (QADT: NOM/ACC/GEN).
+    -- Kept separate from case_sign_id: knowing a word is accusative doesn't
+    -- by itself say *which* sign marks it (fatha, ya', kasra for sound
+    -- feminine plurals...), and this app never guesses a grammar claim.
+    grammatical_case            TEXT CHECK (grammatical_case IN ('nominative','accusative','genitive')),
+
+    -- NULL on a word-level row; set on its clitic segment rows (children via
+    -- parent_segment_token_id), in source order.
+    segment_index               SMALLINT,
+    segment_type                TEXT CHECK (segment_type IN ('prefix','stem','suffix')),
 
     parent_segment_token_id     BIGINT REFERENCES tokens(id), -- groups clitic segments (و+الكتاب)
     analysis_source             TEXT NOT NULL CHECK (analysis_source IN ('qadt','farasa','camel','manual')),
@@ -203,6 +315,7 @@ CREATE INDEX idx_tokens_quran_verse ON tokens (quran_verse_id, position_in_unit)
 CREATE INDEX idx_tokens_library_unit ON tokens (library_text_unit_id, position_in_unit);
 CREATE INDEX idx_tokens_lemma ON tokens (lemma_id);
 CREATE INDEX idx_tokens_root ON tokens (root_id);
+CREATE INDEX idx_tokens_parent_segment ON tokens (parent_segment_token_id);
 
 -- Dependency graph: one head per token (nullable = sentence root).
 CREATE TABLE dependency_edges (
@@ -246,6 +359,10 @@ CREATE TABLE vocabulary_items (
     lemma_id            BIGINT REFERENCES lemmas(id),      -- linked to dictionary, when matched
     custom_word_ar      TEXT,                               -- fallback for unmatched/manual entries
     custom_root         TEXT,
+    custom_meaning_en   TEXT,                               -- user-entered gloss; lemmas.meaning_en
+                                                              -- is the dictionary default when linked,
+                                                              -- this is what the user actually typed
+    custom_transliteration TEXT,
     example_sentence_ar TEXT,
     example_sentence_en TEXT,
     audio_url           TEXT,
@@ -271,6 +388,9 @@ CREATE TABLE srs_cards (
     due_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_reviewed_at    TIMESTAMPTZ,
 
+    -- Leitner state (used when users.srs_algorithm = 'leitner'); due_at is shared.
+    leitner_box         SMALLINT NOT NULL DEFAULT 1 CHECK (leitner_box BETWEEN 1 AND 5),
+
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (vocabulary_item_id, card_type)
 );
@@ -295,9 +415,30 @@ CREATE INDEX idx_review_log_card ON srs_review_log (card_id, reviewed_at);
 
 CREATE TABLE quiz_templates (
     id                  BIGSERIAL PRIMARY KEY,
+    -- Stable authored identifier (src/lib/quiz/templates.ts) — the seed
+    -- upserts on it, and attempts reference the template it resolves to.
+    code                TEXT UNIQUE,
     quiz_type           TEXT NOT NULL CHECK (quiz_type IN
                          ('root_matching','pos_selection','diacritic_placement',
-                          'irab_reconstruction','sentence_ordering','cloze')),
+                          'irab_reconstruction','sentence_ordering','cloze',
+                          -- Added for the client-side quiz generator (src/lib/quiz/generate.ts):
+                          -- covers its "vocab" and "sarf" topics, which don't map cleanly onto
+                          -- the templated-engine types above (see ROADMAP.md Phase 4).
+                          'vocab_recall','wazn_identification',
+                          -- Added for book quizzes (FR-3.x, ROADMAP.md Phase 5 section):
+                          -- 'irab_reconstruction' above is reused for in-context I'rab excerpt
+                          -- drills (same quiz_type, book-sourced instead of curated-sentence-
+                          -- sourced); these two are new question shapes.
+                          'book_comprehension','fawaid_recall',
+                          -- Sentence-to-meaning matching (multiple choice: an
+                          -- Arabic sentence, pick its correct English translation) —
+                          -- same shape both in the general Quiz Center (curated
+                          -- sentences, verified translations) and per-book quizzes
+                          -- (book sentences, Gemini-translated, labeled unverified).
+                          'sentence_meaning_match',
+                          -- Template engine (ROADMAP.md Phase 4): case (i'rab state)
+                          -- of a Qur'anic word, from QADT's NOM/ACC/GEN annotation.
+                          'case_identification')),
     difficulty_tier     TEXT NOT NULL CHECK (difficulty_tier IN ('beginner','intermediate','advanced','classical')),
     template_body       JSONB NOT NULL,       -- generation rules / slot definitions
     explanation_template TEXT,
@@ -312,12 +453,14 @@ CREATE TABLE quiz_questions (
     template_id         BIGINT NOT NULL REFERENCES quiz_templates(id),
     source_token_id     BIGINT REFERENCES tokens(id),
     source_vocabulary_item_id BIGINT REFERENCES vocabulary_items(id),
+    source_library_document_id UUID REFERENCES library_documents(id) ON DELETE CASCADE,
     question_payload    JSONB NOT NULL,        -- rendered prompt + options
     correct_answer      JSONB NOT NULL,
     distractors         JSONB,
     difficulty_tier     TEXT NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_quiz_questions_library_document ON quiz_questions (source_library_document_id);
 
 CREATE TABLE quiz_attempts (
     id                  BIGSERIAL PRIMARY KEY,

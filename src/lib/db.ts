@@ -1,21 +1,16 @@
-import { Pool, type QueryResultRow } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
 
 declare global {
-  var pgPool: Pool | undefined;
+  var prismaClient: PrismaClient | undefined;
 }
 
-const pool =
-  global.pgPool ??
-  new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+
+const db = global.prismaClient ?? new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") {
-  global.pgPool = pool;
+  global.prismaClient = db;
 }
 
-export function query<T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]) {
-  return pool.query<T>(text, params);
-}
-
-export default pool;
+export default db;

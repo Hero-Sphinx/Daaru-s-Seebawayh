@@ -1,42 +1,68 @@
-import Link from "next/link";
-import { recentDocuments } from "@/lib/data/mock-dashboard";
+import db from "@/lib/db";
+import { getCurrentUserId } from "@/lib/auth";
+import { toLibraryDocumentDTO, type LibraryDocumentRow } from "@/lib/library";
+import { ScrollIcon } from "@/components/icons";
+import PageBanner from "@/components/PageBanner";
+import LibraryUpload from "@/components/LibraryUpload";
+import LibrarySearch from "@/components/LibrarySearch";
+import LibraryDocumentCard from "@/components/LibraryDocumentCard";
+import ProcessingRefresher from "@/components/ProcessingRefresher";
 
-const STATUS_STYLES: Record<string, string> = {
-  completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-  processing: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-  failed: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
-};
+export const dynamic = "force-dynamic";
 
-export default function LibraryPage() {
+export default async function LibraryPage() {
+  const userId = await getCurrentUserId();
+  const [rows, sharedRows] = await Promise.all([
+    db.library_documents.findMany({ where: { owner_user_id: userId }, orderBy: { uploaded_at: "desc" } }),
+    db.library_documents.findMany({
+      where: { library_document_shares: { some: { user_id: userId } } },
+      include: { users: { select: { display_name: true, email: true } } },
+      orderBy: { uploaded_at: "desc" },
+    }),
+  ]);
+  const documents = rows.map((r) => toLibraryDocumentDTO(r as unknown as LibraryDocumentRow));
+  const shared = sharedRows.map((r) => ({
+    doc: toLibraryDocumentDTO(r as unknown as LibraryDocumentRow),
+    sharedBy: r.users?.display_name ?? r.users?.email ?? "someone",
+  }));
+
+  const anyProcessing = [...documents, ...shared.map((x) => x.doc)].some((d) => d.processingStatus === "processing");
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Maktabah</h1>
-          <p className="text-neutral-500">Your uploaded texts, parsed and ready for study.</p>
-        </div>
-        <button className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900">
-          Upload document
-        </button>
-      </div>
+      <ProcessingRefresher active={anyProcessing} />
+      <PageBanner tone="sky" icon={ScrollIcon} titleAr="المَكْتَبَةُ" title="Library" description="Upload your books and lessons, read them with tap-a-word morphology and i'rab, search by root, and keep notes and fawā'id.">
+        <LibraryUpload />
+      </PageBanner>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {recentDocuments.map((doc) => (
-          <Link
-            key={doc.id}
-            href={`/library/${doc.id}`}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-neutral-400 dark:hover:border-neutral-600 transition"
-          >
-            <div className="mb-3 flex items-start justify-between">
-              <h3 className="font-medium">{doc.title}</h3>
-              <span className={`text-xs rounded-full px-2 py-0.5 ${STATUS_STYLES[doc.processingStatus]}`}>
-                {doc.processingStatus}
-              </span>
-            </div>
-            <p className="text-sm text-neutral-500">{doc.pageCount} pages</p>
-          </Link>
-        ))}
-      </div>
+      <LibrarySearch />
+
+      {documents.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-sky-300 bg-sky-50/60 px-6 py-10 text-center dark:border-sky-900/60 dark:bg-sky-950/20">
+          <p className="font-arabic text-3xl text-sky-800 dark:text-sky-300" lang="ar">
+            خَيْرُ جَلِيسٍ فِي الزَّمَانِ كِتَابُ
+          </p>
+          <p className="mt-1 text-xs text-muted">“The best companion in any age is a book.” — al-Mutanabbī</p>
+          <p className="mt-4 text-sm text-foreground">Your shelf is empty — upload a PDF or text file above to start reading.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {documents.map((doc) => (
+            <LibraryDocumentCard key={doc.id} doc={doc} />
+          ))}
+        </div>
+      )}
+
+      {shared.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Shared with me</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {shared.map(({ doc, sharedBy }) => (
+              <LibraryDocumentCard key={doc.id} doc={doc} sharedBy={sharedBy} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 {
-  "name": "applisan",
+  "name": "daaru-s-seebawayh",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,23 +8,34 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "user:set-password": "tsx scripts/set-password.ts",
+    "quran:import": "tsx scripts/import-quran.ts",
+    "irab:record-fixtures": "tsx scripts/record-irab-fixtures.ts",
+    "irab:accuracy": "tsx scripts/irab-accuracy.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "next": "16.3.5",
+    "nodemailer": "^10.0.10",
+    "pg": "^8.13.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "pg": "^8.13.1"
+    "unpdf": "^1.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.11.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "prisma": "^7.10.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^3.0.5"
   }
