@@ -230,13 +230,17 @@ Two pieces, plus a database:
    run the database steps under *Getting started* once against it.
 2. **CAMeL service** — a container: `services/camel/Dockerfile` bakes in the
    morphology database, listens on `$PORT` (default 8001) and has a
-   `/health` check. Deploy it to Render / Railway / Fly.io / Cloud Run
-   (`docker build -t dsb-camel services/camel`), then note its URL.
+   `/health` check (it needs ~400 MB of memory). On **Render**: New → Web
+   Service → this repo, root directory `services/camel`, runtime Docker,
+   health check path `/health`. The free instance sleeps after 15 idle
+   minutes (first request then takes ~1 min); a free pinger such as
+   cron-job.org calling `/health` every 10 minutes keeps it awake.
 3. **The web app** — Vercel (or any Node host running `npm run build` and
-   `npm start`). Environment: `DATABASE_URL`, `CAMEL_SERVICE_URL` (the
-   service's URL), `APP_URL` (the app's own public URL, for reset links),
-   `RESEND_API_KEY` + `EMAIL_FROM` for password resets, and optionally
-   `GEMINI_API_KEY` / `GEMINI_MODEL`.
+   `npm start`; `postinstall` generates the Prisma client). Environment:
+   `DATABASE_URL`, `CAMEL_SERVICE_URL` (the service's URL), `APP_URL` (the
+   app's own public URL, for reset links), `SMTP_USER` + `SMTP_PASS` (+
+   `EMAIL_FROM`) for password resets, and optionally `GEMINI_API_KEY` /
+   `GEMINI_MODEL`.
 
 The CAMeL service has no authentication of its own and only exposes a
 read-only analyzer, so a public URL is acceptable; to keep it private, run
