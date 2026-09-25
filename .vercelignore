@@ -1,3 +1,4 @@
 # The CAMeL service is deployed separately (Render) — the website doesn't need its files.
-services/
-data/
+# Leading "/" = only the top-level folders (plain "data/" would also drop src/lib/data/).
+/services/
+/data/
