@@ -34,7 +34,7 @@ class AnalyzeRequest(BaseModel):
     # (root+lemma+POS) into one candidate — right for vocabulary enrichment,
     # where only the dictionary form matters. False: keep every distinct
     # (root, lemma, pos, diac) reading — needed by the free-text I'rab parser
-    # (src/lib/irab/free-text-parser.ts), which matches the user's exact
+    # (src/helpers/irab/freeTextParser.ts), which matches the user's exact
     # input diacritics against `diac` to disambiguate, so it needs the case
     # ending preserved.
     dedupe: bool = True

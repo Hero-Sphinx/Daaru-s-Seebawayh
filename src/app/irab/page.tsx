@@ -1,6 +1,6 @@
-import IrabWorkspaceContainer from "@/components/IrabWorkspaceContainer";
-import { sampleSentences } from "@/lib/data/sample-sentence";
+import { sampleSentences } from "@/constants/data/sampleSentences";
+import { IrabWrapper } from "@/libs";
 
 export default function IrabPage() {
-  return <IrabWorkspaceContainer sentences={sampleSentences} />;
+  return <IrabWrapper sentences={sampleSentences} />;
 }

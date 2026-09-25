@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { analyzeWord, CamelServiceUnavailableError, type CamelCandidate } from "@/lib/camel-client";
-
-export type EnrichCandidate = CamelCandidate;
+import { analyzeWord, CamelServiceUnavailableError } from "@/server/helpers/camelClient";
 
 interface EnrichBody {
   word: string;

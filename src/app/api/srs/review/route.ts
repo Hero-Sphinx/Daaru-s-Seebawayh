@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { reviewLeitner } from "@/lib/srs/leitner";
-import { reviewSm2 } from "@/lib/srs/sm2";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { reviewLeitner } from "@/helpers/srs/leitner";
+import { reviewSm2 } from "@/helpers/srs/sm2";
 
 interface ReviewBody {
   cardId: number;

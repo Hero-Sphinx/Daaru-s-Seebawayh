@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { accessibleDocumentsWhere, isUuid } from "@/lib/library/access";
-import { candidatesFor } from "@/lib/irab/candidates";
-import { buildFawaidQuestions, buildIrabExcerptQuestions, selectSentencesForMeaningMatch } from "@/lib/quiz/book-generate";
-import { buildDocumentText } from "@/lib/library/summarize";
-import { buildComprehensionPrompt, COMPREHENSION_RESPONSE_SCHEMA, type ComprehensionQuestion } from "@/lib/library/quiz-comprehension";
-import { buildMeaningMatchQuestions } from "@/lib/library/quiz-meaning-match";
-import { generateStructured, GeminiNotConfiguredError } from "@/lib/gemini-client";
-import type { StoredQuestionPayload, PlayableBookQuizQuestion, BookQuizSubtype } from "@/lib/library/book-quiz";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { accessibleDocumentsWhere, isUuid } from "@/server/services/library/access";
+import { candidatesFor } from "@/server/services/irab/candidates";
+import { buildFawaidQuestions, buildIrabExcerptQuestions, selectSentencesForMeaningMatch } from "@/helpers/quiz/bookGenerate";
+import { buildDocumentText } from "@/server/services/library/summarize";
+import { buildComprehensionPrompt, COMPREHENSION_RESPONSE_SCHEMA, type ComprehensionQuestion } from "@/server/services/library/quizComprehension";
+import { buildMeaningMatchQuestions } from "@/server/services/library/quizMeaningMatch";
+import { generateStructured, GeminiNotConfiguredError } from "@/server/helpers/geminiClient";
+import type { StoredQuestionPayload, PlayableBookQuizQuestion, BookQuizSubtype } from "@/types/library";
 
 async function getTemplateId(quizType: string): Promise<bigint> {
   const template = await db.quiz_templates.findFirstOrThrow({ where: { quiz_type: quizType } });

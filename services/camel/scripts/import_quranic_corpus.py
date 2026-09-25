@@ -10,12 +10,12 @@ Run from services/camel with its venv active:
 Only content-bearing POS tags (noun, proper noun, verb, adjective, pronoun)
 are extracted — function words (prepositions, conjunctions, particles,
 demonstratives, ...) are already covered deterministically by Daaru-s-Seebawayh's own
-closed-class particle list (src/lib/irab/particles.ts), so this corpus adds
+closed-class particle list (src/helpers/irab/particles.ts), so this corpus adds
 nothing there; importing them would just be noise.
 
 Orthographic normalization (sun-letter assimilation, matres lectionis, etc.)
 is intentionally NOT done here — that logic already exists once, in
-src/lib/irab/normalize.ts, and duplicating it in Python would risk the two
+src/helpers/irab/normalize.ts, and duplicating it in Python would risk the two
 implementations drifting apart. This script only transliterates
 (Buckwalter -> Arabic, using camel_tools' own vetted mapping table) and
 extracts fields; the TypeScript loader applies normalizeForMatch at lookup
@@ -53,7 +53,7 @@ RAW_FILE = REPO_ROOT / "data" / "quranic-corpus" / "quranic-corpus-morphology-0.
 OUTPUT_FILE = REPO_ROOT / "src" / "lib" / "data" / "quranic-corpus-words.json"
 
 # Corpus TAG -> pos string, chosen to match what coarsePos() in
-# src/lib/irab/classify.ts already expects from CAMeL Tools' own tags
+# src/helpers/irab/classify.ts already expects from CAMeL Tools' own tags
 # (noun/noun_prop -> "noun" bucket via startsWith("noun"), adj -> same
 # bucket, verb -> "verb" bucket, pron -> "noun" bucket) — no separate
 # mapping table needed on the TypeScript side.

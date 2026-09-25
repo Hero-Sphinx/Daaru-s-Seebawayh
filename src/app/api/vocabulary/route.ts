@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { toVocabularyCardDTO, type VocabularyItemRow } from "@/lib/vocabulary";
-import { SM2_DEFAULTS } from "@/lib/srs/sm2";
-import { getLemmaIndex } from "@/lib/quran/queries";
-import { matchLemma } from "@/lib/quran/lemma-match";
-
-const VOCAB_QUERY_INCLUDE = {
-  lemmas: { include: { roots: true } },
-  srs_cards: { where: { card_type: "ar_to_en" as const } },
-};
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { toVocabularyCardDTO, VOCAB_QUERY_INCLUDE } from "@/server/services/vocabulary/dto";
+import { SM2_DEFAULTS } from "@/helpers/srs/sm2";
+import { getLemmaIndex } from "@/server/services/quran/queries";
+import { matchLemma } from "@/helpers/quran/lemmaMatch";
 
 export async function GET() {
   const userId = await getApiUserId();
@@ -19,7 +14,7 @@ export async function GET() {
     include: VOCAB_QUERY_INCLUDE,
     orderBy: { created_at: "desc" },
   });
-  return NextResponse.json(items.map((item) => toVocabularyCardDTO(item as unknown as VocabularyItemRow)));
+  return NextResponse.json(items.map((item) => toVocabularyCardDTO(item)));
 }
 
 interface CreateVocabularyBody {
@@ -74,7 +69,7 @@ export async function POST(request: Request) {
     )
   );
 
-  return NextResponse.json(created.map((item) => toVocabularyCardDTO(item as unknown as VocabularyItemRow)), { status: 201 });
+  return NextResponse.json(created.map((item) => toVocabularyCardDTO(item)), { status: 201 });
 }
 
 function toLemmaId(match: { id: string } | null): bigint | null {

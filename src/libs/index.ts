@@ -1,0 +1,16 @@
+export { default as BookQuizWrapper } from "./BookQuizWrapper";
+export { default as DashboardWrapper } from "./DashboardWrapper";
+export { default as ForgotPasswordWrapper } from "./ForgotPasswordWrapper";
+export { default as GuideWrapper } from "./GuideWrapper";
+export { default as IrabWrapper } from "./IrabWrapper";
+export { default as LibraryDocumentWrapper } from "./LibraryDocumentWrapper";
+export { default as LibraryWrapper } from "./LibraryWrapper";
+export { default as LoginWrapper } from "./LoginWrapper";
+export { default as QuizzesWrapper } from "./QuizzesWrapper";
+export { default as QuranChapterWrapper } from "./QuranChapterWrapper";
+export { default as QuranWrapper } from "./QuranWrapper";
+export { default as ResetPasswordWrapper } from "./ResetPasswordWrapper";
+export { default as SettingsWrapper } from "./SettingsWrapper";
+export { default as SignupWrapper } from "./SignupWrapper";
+export { default as VisionWrapper } from "./VisionWrapper";
+export { default as VocabularyWrapper } from "./VocabularyWrapper";

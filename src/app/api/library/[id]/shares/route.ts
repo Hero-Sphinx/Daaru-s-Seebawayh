@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { getDocumentRole, isUuid } from "@/lib/library/access";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { getDocumentRole, isUuid } from "@/server/services/library/access";
 
 /**
  * Share a document with another account by email (owner only). Re-sharing

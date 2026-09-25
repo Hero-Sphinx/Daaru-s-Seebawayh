@@ -1,16 +1,16 @@
 /**
  * Accuracy report: runs the parser over every gold sentence
- * (src/lib/irab/__fixtures__/gold.ts, using the recorded CAMeL analyses) and
+ * (tests/fixtures/irab/gold.ts, using the recorded CAMeL analyses) and
  * prints correct / refused / wrong, with the reason for each non-correct one.
  *
  *   npm run irab:accuracy            (summary + every wrong and refused sentence)
  *   npm run irab:accuracy -- --all   (also list the correct ones)
  */
-import camelFixtures from "../src/lib/irab/__fixtures__/camel-candidates.json";
-import { GOLD } from "../src/lib/irab/__fixtures__/gold";
-import { scoreParse, type Verdict } from "../src/lib/irab/accuracy";
-import { parseFreeText, type RawCandidate } from "../src/lib/irab/free-text-parser";
-import { tokenizeSentence } from "../src/lib/irab/tokenize";
+import camelFixtures from "../tests/fixtures/irab/camelCandidates.json";
+import { GOLD } from "../tests/fixtures/irab/gold";
+import { scoreParse, type Verdict } from "../src/helpers/irab/accuracy";
+import { parseFreeText, type RawCandidate } from "../src/helpers/irab/freeTextParser";
+import { tokenizeSentence } from "../src/helpers/irab/tokenize";
 
 const FIXTURES = camelFixtures as Record<string, RawCandidate[]>;
 const showAll = process.argv.includes("--all");

@@ -1,6 +1,6 @@
 /**
  * Records real CAMeL Tools analyses for every word in the I'rab test
- * sentences (and the accuracy gold set) into src/lib/irab/__fixtures__/camel-candidates.json, so the
+ * sentences (and the accuracy gold set) into tests/fixtures/irab/camelCandidates.json, so the
  * grammar tests run against genuine morphology — offline and deterministic —
  * instead of hand-written candidates that would only test our assumptions.
  *
@@ -11,11 +11,11 @@
  */
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { candidatesFor } from "../src/lib/irab/candidates";
-import { candidateMatchesSurface } from "../src/lib/irab/normalize";
-import { tokenizeSentence } from "../src/lib/irab/tokenize";
-import { GOLD } from "../src/lib/irab/__fixtures__/gold";
-import { FIXTURE_SENTENCES } from "../src/lib/irab/__fixtures__/sentences";
+import { candidatesFor } from "../src/server/services/irab/candidates";
+import { candidateMatchesSurface } from "../src/helpers/irab/normalize";
+import { tokenizeSentence } from "../src/helpers/irab/tokenize";
+import { GOLD } from "../tests/fixtures/irab/gold";
+import { FIXTURE_SENTENCES } from "../tests/fixtures/irab/sentences";
 
 async function main() {
   const out: Record<string, unknown[]> = {};
@@ -26,7 +26,7 @@ async function main() {
       out[word] = all.filter((c) => c.diac && candidateMatchesSurface(c.diac, word));
     }
   }
-  const file = join(__dirname, "..", "src", "lib", "irab", "__fixtures__", "camel-candidates.json");
+  const file = join(__dirname, "..", "tests", "fixtures", "irab", "camelCandidates.json");
   writeFileSync(file, JSON.stringify(out, null, 1) + "\n", "utf8");
   console.log(`Recorded ${Object.keys(out).length} words → ${file}`);
 }

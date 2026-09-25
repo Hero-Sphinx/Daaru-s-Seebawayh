@@ -23,13 +23,13 @@ CREATE TABLE users (
     native_language     TEXT DEFAULT 'en',
     arabic_level        TEXT CHECK (arabic_level IN ('beginner','intermediate','advanced','classical')) DEFAULT 'beginner',
     timezone            TEXT DEFAULT 'UTC',
-    -- Review scheduler preference (src/lib/srs/sm2.ts | leitner.ts).
+    -- Review scheduler preference (src/helpers/srs/sm2.ts | leitner.ts).
     srs_algorithm       TEXT NOT NULL DEFAULT 'sm2' CHECK (srs_algorithm IN ('sm2','leitner')),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at       TIMESTAMPTZ
 );
 
--- Server-side sessions (src/lib/auth.ts). The cookie holds a random opaque
+-- Server-side sessions (src/server/lib/auth.ts). The cookie holds a random opaque
 -- token; only its SHA-256 hash is stored here, so a leaked DB dump can't be
 -- replayed as live sessions. Deleting a row is an immediate, real logout.
 CREATE TABLE sessions (
@@ -42,7 +42,7 @@ CREATE TABLE sessions (
 );
 CREATE INDEX idx_sessions_user ON sessions (user_id);
 
--- Failed sign-ins / reset requests, for rate limiting (src/lib/rate-limit.ts).
+-- Failed sign-ins / reset requests, for rate limiting (src/server/lib/rateLimit.ts).
 -- bucket is 'email:<address>' or 'ip:<address>'.
 CREATE TABLE auth_attempts (
     id                  BIGSERIAL PRIMARY KEY,
@@ -203,7 +203,7 @@ CREATE TABLE library_text_units (
     sequence_in_doc      INT NOT NULL,
     raw_text            TEXT NOT NULL,
     -- 'ocr' when unpdf found no embedded text layer on this page and Gemini
-    -- vision transcribed the page image instead (src/lib/library/extract-pdf.ts)
+    -- vision transcribed the page image instead (src/server/services/library/extractPdf.ts)
     -- — an AI-extracted, unverified transcription, unlike 'pdf_text'. Every
     -- reader/quiz/Fawa'id surface that shows this unit's text must label it
     -- accordingly when this is 'ocr'.
@@ -212,7 +212,7 @@ CREATE TABLE library_text_units (
     processing_status   TEXT NOT NULL DEFAULT 'pending'
                          CHECK (processing_status IN ('pending','tokenized','failed')),
     -- Diacritic-insensitive search text. MUST match normalizeArabicForSearch()
-    -- in src/lib/arabic-normalize.ts (strip harakat/dagger alif/Qur'anic
+    -- in src/helpers/arabic/normalize.ts (strip harakat/dagger alif/Qur'anic
     -- marks/tatweel; fold أ إ آ ٱ to ا).
     raw_text_normalized TEXT GENERATED ALWAYS AS (
         translate(
@@ -423,13 +423,13 @@ CREATE INDEX idx_review_log_card ON srs_review_log (card_id, reviewed_at);
 
 CREATE TABLE quiz_templates (
     id                  BIGSERIAL PRIMARY KEY,
-    -- Stable authored identifier (src/lib/quiz/templates.ts) — the seed
+    -- Stable authored identifier (src/helpers/quiz/templates.ts) — the seed
     -- upserts on it, and attempts reference the template it resolves to.
     code                TEXT UNIQUE,
     quiz_type           TEXT NOT NULL CHECK (quiz_type IN
                          ('root_matching','pos_selection','diacritic_placement',
                           'irab_reconstruction','sentence_ordering','cloze',
-                          -- Added for the client-side quiz generator (src/lib/quiz/generate.ts):
+                          -- Added for the client-side quiz generator (src/helpers/quiz/generate.ts):
                           -- covers its "vocab" and "sarf" topics, which don't map cleanly onto
                           -- the templated-engine types above (see ROADMAP.md Phase 4).
                           'vocab_recall','wazn_identification',

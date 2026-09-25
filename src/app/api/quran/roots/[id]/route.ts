@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRootFamily } from "@/lib/quran/queries";
+import { getRootFamily } from "@/server/services/quran/queries";
 
 // Shared reference data (not per-user), so no DAL check beyond the proxy's
 // signed-in gate.

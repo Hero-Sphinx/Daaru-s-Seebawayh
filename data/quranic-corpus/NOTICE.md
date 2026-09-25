@@ -18,7 +18,7 @@ Per the file's terms of use:
 
 Daaru-s-Seebawayh does exactly that: `services/camel/scripts/import_quranic_corpus.py`
 reads this file (never modifies it) and derives a separate, generated
-lookup table (`src/lib/data/quranic-corpus-words.json`) used as a
+lookup table (`src/server/data/quranicCorpusWords.json`) used as a
 deterministic fallback root/lemma/POS source for classical/Quranic
 vocabulary CAMeL Tools' MSA-only database doesn't cover. Any word sourced
 from it is labeled `analysisSource: "quranic_corpus"` in the UI, distinct

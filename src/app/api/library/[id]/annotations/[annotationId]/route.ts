@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { getDocumentRole, isUuid } from "@/lib/library/access";
-import { MAX_NOTE_LENGTH } from "@/lib/library/annotations";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { getDocumentRole, isUuid } from "@/server/services/library/access";
+import { MAX_NOTE_LENGTH } from "@/helpers/library/annotations";
 
 type Ctx = RouteContext<"/api/library/[id]/annotations/[annotationId]">;
 

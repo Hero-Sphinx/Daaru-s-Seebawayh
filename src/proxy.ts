@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { PUBLIC_PATHS, SESSION_COOKIE } from "@/lib/auth-constants";
+import { PUBLIC_PATHS, SESSION_COOKIE } from "@/constants/auth";
 
 /**
  * Optimistic auth gate: only checks that a session cookie is *present*, so
  * it costs no DB round-trip. Whether that session is real and unexpired is
- * decided by src/lib/auth.ts (getCurrentUserId / getApiUserId) wherever
+ * decided by src/server/lib/auth.ts (getCurrentUserId / getApiUserId) wherever
  * user data is read — this layer just turns away obviously-anonymous
  * requests early, and protects pages like /irab that never touch the DAL.
  */

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { hashPassword, MIN_PASSWORD_LENGTH } from "../src/lib/password";
+import { hashPassword, MIN_PASSWORD_LENGTH } from "../src/server/lib/password";
 
 /**
  * Admin helper: set (or reset) a user's password, optionally renaming their

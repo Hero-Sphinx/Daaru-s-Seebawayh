@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { getDocumentRole, isUuid } from "@/lib/library/access";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { getDocumentRole, isUuid } from "@/server/services/library/access";
 
 /**
  * Remove someone's access: the owner can revoke anyone; a shared user can

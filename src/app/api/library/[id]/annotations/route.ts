@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { canAnnotate, getDocumentRole, isUuid } from "@/lib/library/access";
-import { MAX_NOTE_LENGTH, resolveAnnotationRange } from "@/lib/library/annotations";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { canAnnotate } from "@/helpers/library/annotations";
+import { getDocumentRole, isUuid } from "@/server/services/library/access";
+import { MAX_NOTE_LENGTH, resolveAnnotationRange } from "@/helpers/library/annotations";
 
 interface CreateBody {
   textUnitId: number;

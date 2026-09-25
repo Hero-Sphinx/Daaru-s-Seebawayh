@@ -2,7 +2,7 @@
 -- into db/schema.sql; this upgrades an older database. Idempotent.
 --
 -- The expression MUST match normalizeArabicForSearch() in
--- src/lib/arabic-normalize.ts exactly: strip harakat (U+064B-065F), dagger
+-- src/helpers/arabic/normalize.ts exactly: strip harakat (U+064B-065F), dagger
 -- alif (U+0670), Qur'anic marks (U+06D6-06ED) and tatweel (U+0640); fold
 -- hamza/madda/wasla alifs (U+0623/0625/0622/0671) to bare alif (U+0627).
 -- Built with chr(<decimal code point>) so no invisible combining characters

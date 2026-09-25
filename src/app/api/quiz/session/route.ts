@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { generateQuizQuestions } from "@/lib/quiz/generate";
-import { shuffle } from "@/lib/quiz/primitives";
-import { DIFFICULTIES, getDistractorContext, loadQuranWordItems, loadVocabularyItems, type Difficulty } from "@/lib/quiz/sources";
-import { generateFromTemplates } from "@/lib/quiz/template-engine";
-import { parseTemplateBody, type LoadedTemplate, type QuizItem, type QuizSource, type QuizTopic } from "@/lib/quiz/template-types";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { generateQuizQuestions } from "@/helpers/quiz/generate";
+import { shuffle } from "@/helpers/quiz/primitives";
+import { DIFFICULTIES, getDistractorContext, loadQuranWordItems, loadVocabularyItems, type Difficulty } from "@/server/services/quiz/sources";
+import { generateFromTemplates } from "@/helpers/quiz/templateEngine";
+import { parseTemplateBody, type LoadedTemplate, type QuizItem, type QuizSource, type QuizTopic } from "@/helpers/quiz/templateTypes";
 
 /**
  * Builds a Quiz Center session server-side (ROADMAP.md Phase 4): questions
  * come from the authored quiz_templates rows (interpreted by the template
  * engine against the Qur'an corpus and the learner's vocabulary), blended
- * with the curated I'rab-role and wazn banks from src/lib/quiz/generate.ts.
+ * with the curated I'rab-role and wazn banks from src/helpers/quiz/generate.ts.
  * Every question names the template it came from, so attempts are logged
  * against it.
  */

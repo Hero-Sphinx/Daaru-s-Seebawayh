@@ -4,10 +4,10 @@
  *
  *   npx tsx scripts/irab-debug.ts "جَاءَ الطَّالِبُ مُسْرِعًا" ...
  */
-import camelFixtures from "../src/lib/irab/__fixtures__/camel-candidates.json";
-import { parseFreeText, toSentenceAnalysis, type RawCandidate } from "../src/lib/irab/free-text-parser";
-import { buildIrabSentence } from "../src/lib/irab/irab-sentence";
-import { tokenizeSentence } from "../src/lib/irab/tokenize";
+import camelFixtures from "../tests/fixtures/irab/camelCandidates.json";
+import { parseFreeText, toSentenceAnalysis, type RawCandidate } from "../src/helpers/irab/freeTextParser";
+import { buildIrabSentence } from "../src/helpers/irab/irabSentence";
+import { tokenizeSentence } from "../src/helpers/irab/tokenize";
 
 const FIXTURES = camelFixtures as Record<string, RawCandidate[]>;
 

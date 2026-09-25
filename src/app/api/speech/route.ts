@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { isArabicWord } from "@/lib/arabic-script";
-import { generateArabicSpeech, GeminiNotConfiguredError, GeminiQuotaExhaustedError } from "@/lib/gemini-client";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { isArabicWord } from "@/helpers/arabic/script";
+import { generateArabicSpeech, GeminiNotConfiguredError, GeminiQuotaExhaustedError } from "@/server/helpers/geminiClient";
 
 /**
  * Pronunciation audio for an Arabic word or short phrase — a plain WAV file,

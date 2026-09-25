@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { normalizeArabicForSearch, normalizeWithMap, snippetAround } from "@/lib/arabic-normalize";
-import { accessibleDocumentsSql, accessibleDocumentsWhere } from "@/lib/library/access";
-import { findRootMatches } from "@/lib/library/root-search";
-import { loadRootFormIndex, resolveRoots, suggestLemmas } from "@/lib/library/root-search-db";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { normalizeArabicForSearch, normalizeWithMap, snippetAround } from "@/helpers/arabic/normalize";
+import { accessibleDocumentsSql, accessibleDocumentsWhere } from "@/server/services/library/access";
+import { findRootMatches } from "@/server/services/library/rootSearch";
+import { loadRootFormIndex, resolveRoots, suggestLemmas } from "@/server/services/library/rootSearchDb";
 
 /**
  * FR-2.5 library search, two modes:
  * - text (default): diacritic-insensitive substring match — "كتاب" finds
  *   "كِتَابٌ" — over library_text_units.raw_text_normalized (pg_trgm GIN index).
  * - root: every word from the same root, using the forms of that root
- *   attested in the Qur'an (src/lib/library/root-search.ts).
+ *   attested in the Qur'an (src/server/services/library/rootSearch.ts).
  */
 
 const MAX_RESULTS = 40;

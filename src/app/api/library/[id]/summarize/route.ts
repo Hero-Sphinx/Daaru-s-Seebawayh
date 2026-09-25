@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { isUuid } from "@/lib/library/access";
-import { generateStructured, GeminiNotConfiguredError } from "@/lib/gemini-client";
-import { buildDocumentText, buildSummaryPrompt, SUMMARY_RESPONSE_SCHEMA, type SummaryResult } from "@/lib/library/summarize";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { isUuid } from "@/server/services/library/access";
+import { generateStructured, GeminiNotConfiguredError } from "@/server/helpers/geminiClient";
+import { buildDocumentText, buildSummaryPrompt, SUMMARY_RESPONSE_SCHEMA, type SummaryResult } from "@/server/services/library/summarize";
 
 /**
  * FR-2.2/2.3 chapter summary + Fawā'id extraction. Uses Gemini — the one

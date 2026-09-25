@@ -7,7 +7,7 @@ line between two kinds of content:
   are always deterministic — backed by a verified rule engine, CAMeL Tools,
   or the Quranic Arabic Corpus's morphology data (root/lemma/POS fallback
   for classical/Quranic words CAMeL's MSA-only database has no coverage
-  for — see `src/lib/quranic-corpus.ts` and
+  for — see `src/server/services/irab/quranicCorpus.ts` and
   [data/quranic-corpus/NOTICE.md](data/quranic-corpus/NOTICE.md) for
   provenance/license; note this is *morphology only* — the corpus's
   syntactic dependency treebank isn't available as clean bulk data, so
@@ -15,8 +15,8 @@ line between two kinds of content:
   never from that corpus) — **never** an LLM. A wrong grammar claim stated
   confidently is worse than no answer, so this is non-negotiable; see the
   curated sentence bank in
-  [src/lib/data/sample-sentence.ts](src/lib/data/sample-sentence.ts) and the
-  rule-based free-text parser (`src/lib/irab/free-text-parser.ts`) for what
+  [src/constants/data/sampleSentences.ts](src/constants/data/sampleSentences.ts) and the
+  rule-based free-text parser (`src/helpers/irab/freeTextParser.ts`) for what
   "verified" means here.
 - **Everything else that has no deterministic alternative** uses an LLM
   (Gemini) and is visibly labeled "AI-generated"/"AI-suggested" in the UI,
@@ -25,13 +25,13 @@ line between two kinds of content:
     — there's no rule that "summarizes").
   - Book comprehension quiz questions (needs actual reading comprehension).
   - OCR of scanned/image-only PDF pages that have no embedded text layer at
-    all (`src/lib/library/extract-pdf.ts`) — transcription, not a
+    all (`src/server/services/library/extractPdf.ts`) — transcription, not a
     grammatical claim; labeled in the reader UI and tagged
     `extraction_source: 'ocr'` in the DB, distinct from directly-extracted
     text.
   - Vocabulary word **meaning** and **transliteration**, and resolving a
     transliteration guess (e.g. "kitab") to an Arabic spelling when the user
-    doesn't know the script (`src/lib/vocabulary-lookup.ts`) — a dictionary-
+    doesn't know the script (`src/server/services/vocabulary/lookupPrompt.ts`) — a dictionary-
     lookup/spelling task, not a grammatical claim. The word's **root/lemma/
     POS stay CAMeL-only**, even in this same lookup call — see that file's
     header comment for the line being drawn.
@@ -45,8 +45,8 @@ line between two kinds of content:
 | Database          | PostgreSQL (Neon) via Prisma 7 (`@prisma/adapter-pg`) | Relational integrity for the token/dependency graph; schema lives in [db/schema.sql](db/schema.sql) (source of truth), `prisma/schema.prisma` is introspected from it, not hand-written |
 | NLP (Quranic vocab)| [Quranic Arabic Corpus](https://corpus.quran.com) morphology (bulk import) | Root/lemma/POS fallback for classical/Quranic words CAMeL Tools' MSA-only DB misses — static, bundled data, no runtime service. Attribution required by its license; see `data/quranic-corpus/NOTICE.md` |
 | NLP (general text)| CAMeL Tools (self-hosted)                        | Root/lemma/POS enrichment — deterministic, no API key. Farasa was the original plan but requires an external API key; CAMeL Tools needs neither an account nor a network call |
-| Free-text I'rab   | Hand-written rule-based parser + CAMeL Tools     | Deterministic but limited coverage (verb-subject-object, mubtada'-khabar, each with an optional trailing preposition phrase, and any nominal slot optionally followed by agreeing adjectives/na't); reports "can't determine" rather than guessing outside its coverage — see `src/lib/irab/free-text-parser.ts` |
-| PDF extraction    | [unpdf](https://github.com/unjs/unpdf)           | Pure JS (no native deps), works in serverless runtimes. Always NFKC-normalized — see `src/lib/library/extract-pdf.ts` for why that's not optional. A page with no embedded text layer (scanned/image-only) falls back to Gemini's native PDF understanding (sends the raw file, not a per-page rendered image — Gemini supports up to 50MB/1000 pages this way) to transcribe just those page numbers, batched (not one request per page); transcription, not a grammar claim, same policy as summaries. OCR'd text is labeled in the UI and tagged `extraction_source: 'ocr'` in the DB |
+| Free-text I'rab   | Hand-written rule-based parser + CAMeL Tools     | Deterministic but limited coverage (verb-subject-object, mubtada'-khabar, each with an optional trailing preposition phrase, and any nominal slot optionally followed by agreeing adjectives/na't); reports "can't determine" rather than guessing outside its coverage — see `src/helpers/irab/freeTextParser.ts` |
+| PDF extraction    | [unpdf](https://github.com/unjs/unpdf)           | Pure JS (no native deps), works in serverless runtimes. Always NFKC-normalized — see `src/server/services/library/extractPdf.ts` for why that's not optional. A page with no embedded text layer (scanned/image-only) falls back to Gemini's native PDF understanding (sends the raw file, not a per-page rendered image — Gemini supports up to 50MB/1000 pages this way) to transcribe just those page numbers, batched (not one request per page); transcription, not a grammar claim, same policy as summaries. OCR'd text is labeled in the UI and tagged `extraction_source: 'ocr'` in the DB |
 | Summarization     | Gemini API                                       | Chapter summaries / Fawā'id extraction only — see the policy note above |
 
 ## Project structure
@@ -170,7 +170,7 @@ idempotent — then `db pull` → `generate` → `db seed` → `quran:import` as
 above. `db/schema.sql` already includes everything they add. (There are seven: `001` sessions → `007` auth hardening — login rate limiting and password-reset tokens.)
 
 **Accounts.** Sign up at `/signup`; every page and API route requires a
-session (see `src/lib/auth.ts` and `src/proxy.ts`). Data created before
+session (see `src/server/lib/auth.ts` and `src/proxy.ts`). Data created before
 auth existed belongs to the legacy `dev@al-lisan.local` user — claim it
 by giving that account a real password (and optionally your email):
 
@@ -179,7 +179,7 @@ npm run user:set-password -- dev@al-lisan.local "your-password" you@example.com
 ```
 
 Sign-in is rate limited (5 failed attempts per account and 20 per IP in 15
-minutes; `src/lib/rate-limit.ts`). **Forgot password** (`/forgot-password`)
+minutes; `src/server/lib/rateLimit.ts`). **Forgot password** (`/forgot-password`)
 emails a single-use, one-hour reset link — through any SMTP account
 (`SMTP_USER` + `SMTP_PASS`; a Gmail App Password works, free, no domain
 needed) or Resend (`RESEND_API_KEY` + `EMAIL_FROM`). In development without
@@ -252,7 +252,7 @@ networking) and use the internal URL.
 A restrained, print-inspired palette — warm paper and ink, one deep green
 for identity and actions, a muted gold used sparingly — with Amiri for
 Arabic. Tokens (`--background`, `--surface`, `--border`, `--muted`,
-`--brand`, `--accent`) are CSS custom properties in `src/app/globals.css`
+`--brand`, `--accent`) are CSS custom properties in `src/styles/globals.css`
 (`@theme inline`, Tailwind v4's CSS-first config), redefined under `.dark`.
 Theme and Arabic text size are cookie-backed and read by the server layout,
 so the first render is already right (no flash). The ع−/ع+ control scales
@@ -260,7 +260,7 @@ so the first render is already right (no flash). The ع−/ع+ control scales
 `--arabic-scale` variable, which `.font-arabic` applies with CSS `zoom` (so
 padding scales with the text); the header, footer and dependency-tree SVG
 keep a fixed size. The dashboard's *Wisdom of the day*
-(`src/lib/data/wisdom.ts`) rotates daily through naḥw verse (Ibn Mālik,
+(`src/constants/data/wisdom.ts`) rotates daily through naḥw verse (Ibn Mālik,
 al-ʿImrīṭī), classical poetry and sayings on knowledge and Arabic, each with
 its author, source and an English meaning; traditional-but-uncertain
 attributions are labelled as such.
@@ -348,7 +348,7 @@ the I'rab Workspace's "Type your own sentence" mode for that directly.
 
 Selecting a word (in the sentence, a card, or the tree) highlights it
 consistently across all three views — this is implemented, not a mockup;
-see `src/components/IrabWorkspace.tsx`.
+see `src/libs/IrabWrapper/components/IrabWorkspace/index.tsx`.
 
 ### Vocabulary review (`/vocabulary`)
 
@@ -393,7 +393,7 @@ computed next-due date at the end of the session — functional, not mocked.
 └───────────────────────────────┘
 ```
 
-`src/lib/quiz/generate.ts` generates real questions (pure, unit-tested,
+`src/helpers/quiz/generate.ts` generates real questions (pure, unit-tested,
 seedable) from the existing vocabulary bank, I'rab worked examples, and a
 curated Sarf wazn table — entirely client-side, with no repeats in a session.
 This is a stand-in for the templated `quiz_templates`/`quiz_questions` engine

@@ -11,8 +11,8 @@ start a phase before the previous one's exit criteria are met.
 - PostgreSQL schema (`db/schema.sql`) covering users, roots/lemmas, Quranic
   corpus, library documents, unified tokens/dependency graph, fawā'id, SRS,
   and the quiz engine.
-- SM-2 spaced-repetition engine (`src/lib/srs/sm2.ts`) with unit tests.
-- I'rab Workspace UI (`src/components/IrabWorkspace.tsx`) rendering a
+- SM-2 spaced-repetition engine (`src/helpers/srs/sm2.ts`) with unit tests.
+- I'rab Workspace UI (`src/libs/IrabWrapper/components/IrabWorkspace/index.tsx`) rendering a
   color-coded sentence, expandable token cards, and an SVG dependency tree
   from static mock data.
 - Dashboard, Library, Library reader, and Vocabulary review pages wired to
@@ -22,13 +22,13 @@ start a phase before the previous one's exit criteria are met.
 
 ## Phase 1 — Persistence & auth (MVP core)
 
-- [x] Stand up Postgres (Neon), run `db/schema.sql`, wire `src/lib/db.ts` to a
+- [x] Stand up Postgres (Neon), run `db/schema.sql`, wire `src/server/databases/db.ts` to a
   real connection string via Prisma (`@prisma/adapter-pg`); `prisma/schema.prisma`
   is introspected from `db/schema.sql`, not hand-maintained — after any schema
   change, apply it with `prisma db execute --file db/schema.sql` (or a targeted
   `ALTER`), then `prisma db pull && prisma generate`.
 - [x] CRUD for `vocabulary_items` + `srs_cards` (`src/app/api/vocabulary/`),
-  including bulk/CSV import (`src/lib/vocabulary.ts`); `/vocabulary` reads
+  including bulk/CSV import (`src/helpers/vocabulary.ts`); `/vocabulary` reads
   cards actually due (`WHERE due_at <= now()`) instead of a mock queue.
 - [x] Wired `VocabularyPractice`'s `grade()` calls to `POST /api/srs/review`,
   which persists the SM-2 update and appends to `srs_review_log`.
@@ -36,18 +36,18 @@ start a phase before the previous one's exit criteria are met.
   `user_quiz_stats`; the dashboard's "cards due" / "words mastered" / "quiz
   accuracy (7d)" stats are now live queries, not mocked.
 - [x] Auth: email/password sign-up/login (`/signup`, `/login`, server
-  actions in `src/app/(auth)/actions.ts`) writing to `users`. No new
-  dependencies — scrypt hashing via `node:crypto` (`src/lib/password.ts`).
+  actions in `src/server/actions/auth.ts`) writing to `users`. No new
+  dependencies — scrypt hashing via `node:crypto` (`src/server/lib/password.ts`).
   **Database sessions**, not stateless JWTs: the cookie holds a random
   256-bit token and the `sessions` table stores only its SHA-256 hash, so
   logout / password reset revoke immediately and a DB leak can't be
   replayed. 30-day sliding expiry (DB row extended, no write per request).
   Two layers per the Next 16 auth guide: `src/proxy.ts` does an optimistic
   cookie-presence gate (redirect pages to `/login?next=…`, 401 for
-  `/api/*`); `src/lib/auth.ts` does the real check — `getCurrentUserId()`
+  `/api/*`); `src/server/lib/auth.ts` does the real check — `getCurrentUserId()`
   (pages, redirects) and `getApiUserId()` + `unauthorizedResponse()`
   (route handlers, JSON 401 rather than a redirect a `fetch()` would choke
-  on). `?next=` is open-redirect-safe (`src/lib/safe-redirect.ts`).
+  on). `?next=` is open-redirect-safe (`src/constants/safeRedirect.ts`).
   Pre-auth data stays with the legacy `dev@al-lisan.local` user; claim it
   with `npm run user:set-password` (see README). Not built: email
   verification, password reset by email (needs an email provider), login
@@ -80,10 +80,10 @@ redirect, logout revoking the session server-side.)*
 ## Free-text I'rab parsing (FR-1.1, FR-1.3) — done, not phase-numbered
 
 Doesn't map cleanly onto the phases above, so it's called out separately.
-`src/lib/irab/free-text-parser.ts` — deterministic, rule-based, no LLM (see
+`src/helpers/irab/freeTextParser.ts` — deterministic, rule-based, no LLM (see
 the AI usage policy at the top of README.md). `/irab` now has a "Type your
 own sentence" mode alongside the curated picker
-(`src/components/FreeTextIrabInput.tsx` → `POST /api/irab/parse`).
+(`src/libs/IrabWrapper/components/FreeTextIrabInput/index.tsx` → `POST /api/irab/parse`).
 
 - **Scope**: exactly 3 sentence patterns — verb-subject-object, simple
   mubtada'-khabar, each with an optional trailing preposition phrase (same
@@ -99,7 +99,7 @@ own sentence" mode alongside the curated picker
   reading is used and flagged via a `resolutionNote`; where it doesn't,
   the token is left unparsed.
 - **Normalization gotchas found by testing against real CAMeL output**
-  (`src/lib/irab/normalize.ts`, all covered by unit tests) — worth reading
+  (`src/helpers/irab/normalize.ts`, all covered by unit tests) — worth reading
   before touching this code, since they weren't obvious from the API docs:
   - CAMeL's own diacritization is inconsistent about the sun-letter
     position after the definite article ("الطَّالِبُ" → CAMeL's "الطالِبُ",
@@ -129,7 +129,7 @@ Three real misparses, all fixed and pinned by tests with the exact sentences:
 - **Typed endings are now binding.** إِنَّ الحَقَّ وَاضِحٌ came out as verb +
   fa'il with "sign: damma" on a word visibly ending in a fatha — case was
   assigned by position and never checked against what was typed. Every slot
-  now requires a compatible ending (`src/lib/irab/case-ending.ts`), and the
+  now requires a compatible ending (`src/helpers/irab/caseEnding.ts`), and the
   sign shown is derived from it, including substitute signs: و/ي for sound
   masculine plurals, ا/ي for duals, kasra for the nasb of sound feminine
   plurals. Sound plurals are recognised only when CAMeL says plural *and* the
@@ -152,7 +152,7 @@ Three real misparses, all fixed and pinned by tests with the exact sentences:
 ### Full grammar (every previously-unsupported construction)
 
 The pattern matcher was replaced by a recursive-descent grammar
-(`src/lib/irab/grammar.ts`) over real CAMeL morphology. The CAMeL service
+(`src/helpers/irab/grammar.ts`) over real CAMeL morphology. The CAMeL service
 now passes through its morphosyntactic features (aspect, mood, case, state,
 person/gender/number, voice, proclitics, enclitic, and the tagged morpheme
 segmentation `bw`) — `morph.ts` turns them into structured facts, and words
@@ -191,13 +191,13 @@ i'rab and its own node in the dependency tree.
   start of the word).
 
 Tests run on **real CAMeL analyses** recorded into
-`src/lib/irab/__fixtures__/camel-candidates.json`
+`tests/fixtures/irab/camelCandidates.json`
 (`npm run irab:record-fixtures`), covering ~55 sentences.
 
 ### Accuracy run and the remaining constructions
 
 A gold set of **186 textbook sentences** with their correct i'rab
-(`src/lib/irab/__fixtures__/gold.ts`) is scored word by word by
+(`tests/fixtures/irab/gold.ts`) is scored word by word by
 `npm run irab:accuracy`: *correct*, *refused* (the parser declined and said
 why), or *wrong* (a confident false analysis). It includes constructions the
 parser deliberately doesn't cover. A test fails on any *wrong* sentence or if
@@ -268,7 +268,7 @@ names without ة, foreign names).
   natural keys; a re-run is a ~2s no-op; `--force` reloads tokens), and it
   fails loudly on any unparseable line, unknown POS tag or unknown
   Buckwalter character rather than skipping it.
-- [x] **Extended Buckwalter decoding** (`src/lib/quran/buckwalter.ts`):
+- [x] **Extended Buckwalter decoding** (`src/helpers/quran/buckwalter.ts`):
   the corpus uses JQuranTree's extended scheme; Uthmani marks are kept for
   displayed text and dropped for dictionary keys, and output is
   NFC-normalized (the source writes shadda-then-fatha; typed Arabic is the
@@ -285,7 +285,7 @@ names without ة, foreign names).
   Paginated at 30 verses.
 - [x] **Dictionary for vocabulary** — `POST /api/vocabulary` auto-links a new
   word to its Qur'an lemma (`vocabulary_items.lemma_id`) when exactly one
-  lemma matches (`src/lib/quran/lemma-match.ts`: Uthmani ↔ standard
+  lemma matches (`src/helpers/quran/lemmaMatch.ts`: Uthmani ↔ standard
   spelling, both dagger-alif spellings, diacritics/root narrow it down;
   ambiguous words like undiacritized كتب stay unlinked). The importer
   backfills existing items the same way. The learner's own spelling is
@@ -298,7 +298,7 @@ names without ة, foreign names).
   rather than guessed. **Revised exit criterion, met:** any of the 114
   surahs renders a word-by-word morphological breakdown sourced entirely
   from QADT, with zero hand-authored data (except surah names and
-  revelation place, `src/lib/quran/chapters.ts`, which the corpus file
+  revelation place, `src/helpers/quran/chapters.ts`, which the corpus file
   doesn't carry).
 
 ## Phase 3 — Library pipeline (FR-2.1 - FR-2.5)
@@ -325,7 +325,7 @@ see Phase 1):
   Arabic Presentation Forms, contextual letter shapes) instead of logical
   characters — extracted text in that case is unusable by CAMeL Tools or
   anything else without conversion. Fixed by always applying Unicode NFKC
-  normalization (`src/lib/library/extract-pdf.ts::normalizePdfText`,
+  normalization (`src/server/services/library/extractPdf.ts::normalizePdfText`,
   unit-tested). Also confirmed empirically: real book PDFs are mostly not
   fully diacritized, which is exactly what the free-text I'rab parser
   (Phase 1.5 above) already assumes and handles honestly.
@@ -347,11 +347,11 @@ see Phase 1):
 - [x] **FR-2.2/2.3 summaries & Fawā'id**: `POST /api/library/[id]/summarize`
   — the one Gemini-backed endpoint in the app (see README.md's AI usage
   policy). One call summarizes the whole document (truncated to a ~40K-char
-  budget, `src/lib/library/summarize.ts::buildDocumentText`) and extracts
+  budget, `src/server/services/library/summarize.ts::buildDocumentText`) and extracts
   Fawā'id grounded to specific pages via Gemini's structured-output mode
   (`responseSchema`), stored on `library_documents.summary_en/ar` and as
   `fawaid` rows (`created_by = 'system'`). Both are rendered with a visible
-  "AI-generated, unverified" badge (`src/components/LibrarySummary.tsx`).
+  "AI-generated, unverified" badge (`src/libs/LibraryDocumentWrapper/components/LibrarySummary/index.tsx`).
   **No per-chapter summaries** — PDFs don't have machine-readable chapter
   boundaries without further heading-detection work, so this is
   document-level only; noted here as a real gap against the FR, not silently
@@ -364,7 +364,7 @@ see Phase 1):
   - `gemini-3.8-flash` (the default) hit a **429 quota** error under real
     testing, not just the 503 "high demand" seen earlier — free-tier quotas
     per model are tighter than they look. `generateStructured` now retries
-    with exponential backoff on 429/503 (`src/lib/gemini-client.ts`); if a
+    with exponential backoff on 429/503 (`src/server/helpers/geminiClient.ts`); if a
     model is out of quota, override `GEMINI_MODEL` (`gemini-2.5-flash`
     confirmed working) rather than waiting on it.
   - **Turbopack dev-cache gotcha**: after `prisma generate` picks up new
@@ -381,7 +381,7 @@ can be generated on demand. *(Met, with the scope notes above.)*
 ## Phase 4 — Quiz engine
 
 A client-side prototype ships at `/quizzes`
-(`src/components/QuizCenter.tsx` + `src/lib/quiz/generate.ts`): it generates
+(`src/libs/QuizzesWrapper/index.tsx` + `src/helpers/quiz/generate.ts`): it generates
 real vocab/I'rab/Sarf multiple-choice questions from the user's actual
 vocabulary bank and the app's I'rab/wazn data, with no repeats in a session,
 entirely in the browser (no `quiz_templates`-driven question bank, no
@@ -395,7 +395,7 @@ mocked, as an earlier version of this doc said.
 - [x] **Template-driven generation.** `quiz_templates` rows now carry a
   stable `code` and a real `template_body` (source, filter, prompt with
   placeholders, answer field, distractor strategy, explanation) — authored
-  in `src/lib/quiz/templates.ts`, seeded by code, validated on read
+  in `src/helpers/quiz/templates.ts`, seeded by code, validated on read
   (`template-types.ts`; an invalid row is skipped, not fatal), and
   interpreted by a generic, pure engine (`template-engine.ts`). New
   question types from the Phase 2 data: case identification (new
@@ -431,7 +431,7 @@ request rather than literally infinite.)*
 
 Same reasoning as the free-text I'rab section above — doesn't map onto the
 phases cleanly. `/library/[id]/quiz`
-(`src/components/BookQuizPlayer.tsx` → `POST`/`GET /api/library/[id]/quiz`),
+(`src/libs/BookQuizWrapper/components/BookQuizPlayer/index.tsx` → `POST`/`GET /api/library/[id]/quiz`),
 linked from the document reader page. Reuses `QuizPlayer.tsx`, extracted
 from `QuizCenter.tsx` so both the general and book quiz UIs share one
 "play a session" implementation instead of duplicating it.
@@ -440,7 +440,7 @@ Deliberately hybrid — only the one subtype that genuinely needs it uses
 Gemini, matching this app's whole approach to AI usage:
 
 - **FR-3.2 "Linguistic Gem Identification" → `fawaid_recall`**: fully
-  deterministic (`src/lib/quiz/book-generate.ts::buildFawaidQuestions`) —
+  deterministic (`src/helpers/quiz/bookGenerate.ts::buildFawaidQuestions`) —
   just reformats already-extracted `fawaid` rows into MCQ form, the same
   pattern as the vocab quiz. (The underlying Fawā'id content is still
   Gemini-sourced from Phase 3, so these questions inherit that
@@ -458,7 +458,7 @@ Gemini, matching this app's whole approach to AI usage:
   Try it against a children's book, a Qur'an-adjacent text, or another
   fully-vocalized PDF to see this subtype actually populate.
 - **FR-3.1/FR-3.2 "Chapter Summary Verification" → `book_comprehension`**:
-  the one subtype using Gemini (`src/lib/library/quiz-comprehension.ts`),
+  the one subtype using Gemini (`src/server/services/library/quizComprehension.ts`),
   since comprehension inherently needs reading, not rule-matching. Skipped
   (not failed) if `GEMINI_API_KEY` is unset — the other two subtypes still
   generate.
@@ -485,7 +485,7 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
 
 - [x] **I'rab reconstruction** — I'rab Workspace → "Build it yourself":
   the learner picks each word's role and the word it depends on, then
-  checks it against the verified analysis (`src/lib/irab/reconstruction.ts`,
+  checks it against the verified analysis (`src/helpers/irab/reconstruction.ts`,
   role and head graded separately, rule references shown for mistakes).
   Works on the curated bank and on any typed sentence the deterministic
   parser *fully* resolves — a partial answer key would mark right answers
@@ -493,7 +493,7 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
   (`irab_reconstruction`).
 - [x] **Audio** — real recitation, not TTS, for anything Qur'anic
   (synthesized "recitation" would get tajwid wrong): word-by-word audio
-  from Quran.com's CDN (`src/lib/quran/audio.ts`; its word numbering was
+  from Quran.com's CDN (`src/helpers/quran/audio.ts`; its word numbering was
   verified to match the corpus's across 9 verses before relying on it).
   Qur'an reader: "Listen" per word and "Recite word by word" per verse
   with the current word underlined. Vocabulary: any word linked to a
@@ -501,7 +501,7 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
   list) — also the fallback for devices with no Arabic TTS voice. Browser
   TTS stays for everything else.
 - [x] **Leitner boxes** as a per-user alternative to SM-2 (`/settings`,
-  `users.srs_algorithm`, `srs_cards.leitner_box`, `src/lib/srs/leitner.ts`):
+  `users.srs_algorithm`, `srs_cards.leitner_box`, `src/helpers/srs/leitner.ts`):
   5 boxes at 1/3/7/14/30 days, two-button grading. Switching to Leitner
   places each card in the box matching its SM-2 interval; Leitner reviews
   keep SM-2's interval/repetitions in step, so switching back resumes
@@ -510,7 +510,7 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
   root (ك ت ب), a headword, or an inflected form (يكتبون); every form of
   that root attested in the Qur'an is matched in the library, both
   dagger-alif spellings, with و/ف, ب/ل/ك, ال and one suffix layer peeled
-  (`src/lib/library/root-search.ts`). Uses pg_trgm twice: a GIN trigram
+  (`src/server/services/library/rootSearch.ts`). Uses pg_trgm twice: a GIN trigram
   index on the new generated `library_text_units.raw_text_normalized`
   (pre-filter; also makes plain search diacritic-insensitive) and
   `similarity()` for "did you mean" suggestions. **Limitation, by design:**
@@ -519,7 +519,7 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
   ("Highlight & add notes" in the reader), shared or private; share a
   document by email as *viewer* or *annotator*
   (`library_document_shares`, `library_annotations`). One access module
-  (`src/lib/library/access.ts`, Prisma + raw-SQL forms) used by every
+  (`src/server/services/library/access.ts`, Prisma + raw-SQL forms) used by every
   library page/route: owner does everything; annotators add notes; viewers
   read; others get 404 (existence isn't leaked). Owner-only: delete,
   summarize (spends Gemini quota), share. Owners can remove others' shared

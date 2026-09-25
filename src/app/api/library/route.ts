@@ -1,9 +1,10 @@
 import { after, NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { accessibleDocumentsWhere } from "@/lib/library/access";
-import { extractTextLayer, ocrPages, type ExtractedPage } from "@/lib/library/extract-pdf";
-import { toLibraryDocumentDTO, MAX_UPLOAD_BYTES, type LibraryDocumentRow } from "@/lib/library";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { accessibleDocumentsWhere } from "@/server/services/library/access";
+import { extractTextLayer, ocrPages, type ExtractedPage } from "@/server/services/library/extractPdf";
+import { MAX_UPLOAD_BYTES } from "@/constants/library";
+import { toLibraryDocumentDTO } from "@/server/services/library/dto";
 
 export async function GET() {
   const userId = await getApiUserId();
@@ -12,7 +13,7 @@ export async function GET() {
     where: accessibleDocumentsWhere(userId),
     orderBy: { uploaded_at: "desc" },
   });
-  return NextResponse.json(documents.map((d) => toLibraryDocumentDTO(d as unknown as LibraryDocumentRow)));
+  return NextResponse.json(documents.map((d) => toLibraryDocumentDTO(d)));
 }
 
 /**
@@ -149,5 +150,5 @@ async function markDone(documentId: string, jobId: bigint, note: string | null) 
 
 async function documentDto(documentId: string) {
   const row = await db.library_documents.findUniqueOrThrow({ where: { id: documentId } });
-  return toLibraryDocumentDTO(row as unknown as LibraryDocumentRow);
+  return toLibraryDocumentDTO(row);
 }

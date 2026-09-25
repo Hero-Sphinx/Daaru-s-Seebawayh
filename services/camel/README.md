@@ -24,7 +24,7 @@ camel_data -i morphology-db-msa-r13   # ~40MB, downloads to your CAMeL Tools dat
 
 The Next.js app expects this at `CAMEL_SERVICE_URL` (defaults to
 `http://localhost:8001` — see `.env.example` at the repo root) and calls it
-through `src/lib/camel-client.ts`. It is not started automatically by
+through `src/server/helpers/camelClient.ts`. It is not started automatically by
 `npm run dev` — run it separately. Features that need it: the vocabulary
 form's "Auto-fill" button, the I'rab Workspace's "Type your own sentence"
 mode (`/api/irab/parse`), the Library reader's click-a-word lookups, and

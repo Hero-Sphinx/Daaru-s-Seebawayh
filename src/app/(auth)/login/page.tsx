@@ -1,13 +1,11 @@
 import { redirect } from "next/navigation";
-import AuthForm from "@/components/AuthForm";
-import { getSessionUser } from "@/lib/auth";
-import { emailConfigured } from "@/lib/email";
-import { safeNextPath } from "@/lib/safe-redirect";
-import { login } from "../actions";
+import { safeNextPath } from "@/constants/safeRedirect";
+import { LoginWrapper } from "@/libs";
+import { getSessionUser } from "@/server/lib/auth";
+import { emailConfigured } from "@/server/lib/email";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const next = safeNextPath((await searchParams).next);
   if (await getSessionUser()) redirect(next);
-  const canResetByEmail = emailConfigured() || process.env.NODE_ENV !== "production";
-  return <AuthForm mode="login" action={login} next={next} canResetByEmail={canResetByEmail} />;
+  return <LoginWrapper next={next} canResetByEmail={emailConfigured() || process.env.NODE_ENV !== "production"} />;
 }

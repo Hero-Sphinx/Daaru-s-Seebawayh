@@ -2,11 +2,11 @@ import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
-import { toArabic, toSimpleArabic } from "../src/lib/quran/buckwalter";
-import { CHAPTERS } from "../src/lib/quran/chapters";
-import { parseCorpus, type CorpusWord } from "../src/lib/quran/corpus-parser";
-import { buildLemmaIndex, matchLemma } from "../src/lib/quran/lemma-match";
-import { QADT_POS_TAGS, VERB_FORMS } from "../src/lib/quran/tagset";
+import { toArabic, toSimpleArabic } from "../src/helpers/quran/buckwalter";
+import { CHAPTERS } from "../src/helpers/quran/chapters";
+import { parseCorpus, type CorpusWord } from "../src/helpers/quran/corpusParser";
+import { buildLemmaIndex, matchLemma } from "../src/helpers/quran/lemmaMatch";
+import { QADT_POS_TAGS, VERB_FORMS } from "../src/helpers/quran/tagset";
 
 /**
  * One-time (re-runnable) import of the Quranic Arabic Corpus morphology

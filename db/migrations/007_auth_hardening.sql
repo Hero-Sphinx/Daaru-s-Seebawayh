@@ -4,7 +4,7 @@
 
 -- One row per failed sign-in / reset request, keyed by what's being
 -- protected ('email:<address>' and 'ip:<address>'). Rows older than the
--- window are ignored and cleaned up opportunistically (src/lib/rate-limit.ts).
+-- window are ignored and cleaned up opportunistically (src/server/lib/rateLimit.ts).
 CREATE TABLE IF NOT EXISTS auth_attempts (
     id                  BIGSERIAL PRIMARY KEY,
     bucket              TEXT NOT NULL,

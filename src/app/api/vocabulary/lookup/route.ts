@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { isArabicWord } from "@/lib/arabic-script";
-import { analyzeWord, CamelServiceUnavailableError, type CamelCandidate } from "@/lib/camel-client";
-import { generateStructured, GeminiNotConfiguredError, GeminiQuotaExhaustedError } from "@/lib/gemini-client";
-import { buildWordLookupPrompt, WORD_LOOKUP_SCHEMA, type WordLookupResult } from "@/lib/vocabulary-lookup";
+import { isArabicWord } from "@/helpers/arabic/script";
+import { analyzeWord, CamelServiceUnavailableError, type CamelCandidate } from "@/server/helpers/camelClient";
+import { generateStructured, GeminiNotConfiguredError, GeminiQuotaExhaustedError } from "@/server/helpers/geminiClient";
+import { buildWordLookupPrompt, WORD_LOOKUP_SCHEMA, type WordLookupResult } from "@/server/services/vocabulary/lookupPrompt";
 
 interface LookupBody {
   input: string;

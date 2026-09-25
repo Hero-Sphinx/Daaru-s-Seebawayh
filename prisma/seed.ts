@@ -1,13 +1,13 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
-import { CASE_SIGNS, GRAMMATICAL_ROLES } from "../src/lib/data/grammatical-roles";
-import { QUIZ_TEMPLATES as AUTHORED_TEMPLATES } from "../src/lib/quiz/templates";
+import { CASE_SIGNS, GRAMMATICAL_ROLES } from "../src/constants/data/grammaticalRoles";
+import { QUIZ_TEMPLATES as AUTHORED_TEMPLATES } from "../src/helpers/quiz/templates";
 
 /**
  * Idempotent seed data: lookup tables that mirror the TS registries in
- * src/lib/data/grammatical-roles.ts (single source of truth for both).
+ * src/constants/data/grammaticalRoles.ts (single source of truth for both).
  * Safe to re-run. Users are no longer seeded — accounts come from /signup
- * (see src/lib/auth.ts); scripts/set-password.ts can claim a legacy seeded
+ * (see src/server/lib/auth.ts); scripts/set-password.ts can claim a legacy seeded
  * dev user's data.
  */
 
@@ -69,7 +69,7 @@ async function main() {
     });
   }
 
-  // Authored engine templates (src/lib/quiz/templates.ts) — the file is the
+  // Authored engine templates (src/helpers/quiz/templates.ts) — the file is the
   // source of truth, so re-seeding overwrites DB edits to these rows.
   for (const t of AUTHORED_TEMPLATES) {
     const data = {

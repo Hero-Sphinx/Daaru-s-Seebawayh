@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/vocabulary/[id]">) {
   const { id } = await ctx.params;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateAiMeaningQuestions } from "@/lib/quiz/generate-meaning-ai";
+import { generateAiMeaningQuestions } from "@/server/services/quiz/generateMeaningAi";
 
 interface GenerateBody {
   count?: number;

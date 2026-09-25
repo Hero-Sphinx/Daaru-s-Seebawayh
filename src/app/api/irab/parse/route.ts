@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { tokenizeSentence } from "@/lib/irab/tokenize";
-import { isHarfJarr } from "@/lib/irab/particles";
-import { CamelServiceUnavailableError } from "@/lib/camel-client";
-import { candidatesFor } from "@/lib/irab/candidates";
-import { parseFreeText, toSentenceAnalysis, type TokenInput } from "@/lib/irab/free-text-parser";
-import { translateSentence } from "@/lib/irab/translate";
+import { tokenizeSentence } from "@/helpers/irab/tokenize";
+import { isHarfJarr } from "@/helpers/irab/particles";
+import { CamelServiceUnavailableError } from "@/server/helpers/camelClient";
+import { candidatesFor } from "@/server/services/irab/candidates";
+import { parseFreeText, toSentenceAnalysis, type TokenInput } from "@/helpers/irab/freeTextParser";
+import { translateSentence } from "@/server/services/irab/translate";
 
 interface ParseBody {
   text: string;

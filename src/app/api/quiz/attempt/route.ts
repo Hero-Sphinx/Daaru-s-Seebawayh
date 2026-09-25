@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
 
 const TOPIC_TO_QUIZ_TYPE: Record<string, string> = {
   vocab: "vocab_recall",
   irab: "irab_reconstruction",
   sarf: "wazn_identification",
   meaning: "sentence_meaning_match",
-  // Book quiz subtypes (FR-3.x) — src/components/BookQuizPlayer.tsx passes
+  // Book quiz subtypes (FR-3.x) — src/libs/BookQuizWrapper/components/BookQuizPlayer/index.tsx passes
   // these directly, already matching real quiz_type values.
   fawaid_recall: "fawaid_recall",
   irab_reconstruction: "irab_reconstruction",

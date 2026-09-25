@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { getApiUserId, unauthorizedResponse } from "@/lib/auth";
-import { accessibleDocumentsWhere, isUuid } from "@/lib/library/access";
-import { toLibraryDocumentDTO, type LibraryDocumentRow } from "@/lib/library";
+import db from "@/server/databases/db";
+import { getApiUserId, unauthorizedResponse } from "@/server/lib/auth";
+import { accessibleDocumentsWhere, isUuid } from "@/server/services/library/access";
+import { toLibraryDocumentDTO } from "@/server/services/library/dto";
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/library/[id]">) {
   const { id } = await ctx.params;
@@ -20,7 +20,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/library/[id
   });
 
   return NextResponse.json({
-    document: toLibraryDocumentDTO(document as unknown as LibraryDocumentRow),
+    document: toLibraryDocumentDTO(document),
     pages: textUnits.map((u) => ({ id: Number(u.id), pageNumber: u.page_number, text: u.raw_text })),
     fawaid: textUnits.flatMap((u) =>
       u.fawaid.map((f) => ({
