@@ -1,0 +1,3 @@
+# The CAMeL service is deployed separately (Render) — the website doesn't need its files.
+services/
+data/
