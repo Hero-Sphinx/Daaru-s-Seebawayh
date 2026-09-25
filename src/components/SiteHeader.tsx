@@ -36,46 +36,35 @@ type SiteHeaderProps = {
 };
 
 /**
- * Whether the header chrome should show: hidden once the user scrolls down
- * past the top, shown again as soon as they scroll up (or reach the top).
- * Phones slide the whole header away (no layout change); large screens fold
- * just the name band.
+ * Whether the header chrome should show. It hides once the page has been
+ * scrolled a little way down, and comes back only at the very top — not on
+ * every small upward scroll, which on phones (momentum scrolling, the address
+ * bar resizing) made it flip back and forth.
  *
- * Folding the band changes the header's height, and the browser compensates
- * by shifting the scroll position (scroll anchoring) — which looks like a
- * scroll in the other direction and would reopen the band, over and over
- * (the mid-page flicker). So after each change, scroll events are ignored
- * until the fold animation has finished, and the position is re-read then.
- * A dead zone also ignores tiny jitters.
+ * The two thresholds are far apart on purpose: on large screens folding the
+ * name band shortens the header, and the browser nudges the scroll position
+ * by that much (scroll anchoring). With a single threshold that nudge would
+ * cross it again and reopen the band; with this gap it never can.
  */
-const BAND_ANIMATION_MS = 350;
+const HIDE_AFTER_PX = 140;
+const SHOW_AT_PX = 2;
 
 function useNameBandVisibility(): boolean {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
-    let lastY = window.scrollY;
     let shown = true;
-    let settlingUntil = 0;
     let frame = 0;
     const onScroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         const y = window.scrollY;
-        if (performance.now() < settlingUntil) {
-          lastY = y; // the page's own adjustment, not the user
-          return;
-        }
-        let next = shown;
-        if (y < 48) next = true;
-        else if (y > lastY + 12) next = false;
-        else if (y < lastY - 12) next = true;
-        else return; // inside the dead zone: keep lastY so slow scrolls still add up
-        lastY = y;
-        if (next !== shown) {
-          shown = next;
-          settlingUntil = performance.now() + BAND_ANIMATION_MS;
-          setVisible(next);
+        if (shown && y > HIDE_AFTER_PX) {
+          shown = false;
+          setVisible(false);
+        } else if (!shown && y <= SHOW_AT_PX) {
+          shown = true;
+          setVisible(true);
         }
       });
     };
@@ -115,8 +104,8 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
 
   return (
     <header
-      className={`site-chrome sticky top-0 z-40 border-b border-emerald-200/70 bg-gradient-to-r from-emerald-50/95 via-white/95 to-amber-50/95 shadow-sm backdrop-blur transition-transform duration-300 ease-out motion-reduce:transition-none dark:border-emerald-900/50 dark:from-emerald-950/90 dark:via-parchment-800/95 dark:to-teal-950/80 ${
-        chromeVisible ? "" : "max-lg:-translate-y-full"
+      className={`site-chrome sticky top-0 z-40 border-b border-emerald-200/70 bg-gradient-to-r from-emerald-50/95 via-white/95 to-amber-50/95 shadow-sm backdrop-blur transition-[transform,opacity] duration-500 ease-in-out will-change-transform motion-reduce:transition-none dark:border-emerald-900/50 dark:from-emerald-950/90 dark:via-parchment-800/95 dark:to-teal-950/80 ${
+        chromeVisible ? "" : "max-lg:-translate-y-full max-lg:opacity-0"
       }`}
     >
       {/* A thin green-and-gold line across the very top. */}
@@ -223,7 +212,7 @@ export default function SiteHeader({ initialIsDark, initialArabicScale, signedIn
           It folds away while scrolling down and comes back on scrolling up (grid-rows 1fr ↔ 0fr animates the height). */}
       {/* On phones the band stays (the whole header slides instead); on large screens it folds on its own. */}
       <div
-        className={`grid grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+        className={`grid grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-500 ease-in-out motion-reduce:transition-none ${
           chromeVisible ? "lg:grid-rows-[1fr] lg:opacity-100" : "lg:grid-rows-[0fr] lg:opacity-0"
         }`}
       >
