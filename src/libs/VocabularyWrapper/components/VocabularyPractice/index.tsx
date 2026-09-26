@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { VolumeIcon } from "@/components";
-import { listenArabic, playClip, wordAudioUrl } from "@/helpers";
+import { useKeyboardShortcuts, useListen } from "@/hooks";
 import type { VocabularyCardDTO } from "@/types";
+import { errorMessage, fetcher } from "@/constants";
 
 interface ReviewOutcome {
   vocabItemId: number;
@@ -58,16 +59,28 @@ export default function VocabularyPractice({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [outcomes, setOutcomes] = useState<ReviewOutcome[]>([]);
-  const [speechError, setSpeechError] = useState<string | null>(null);
+  const { listen, playRecitation, speechError, dismissSpeechError } = useListen();
+
+  // Words added below (or due since the page loaded) join the review queue
+  // when the page refreshes, instead of waiting for a full reload.
+  const [seenQueue, setSeenQueue] = useState(initialQueue);
+  if (initialQueue !== seenQueue) {
+    setSeenQueue(initialQueue);
+    if (mode === "review") setQueue((q) => [...q, ...initialQueue.filter((c) => !q.some((x) => x.id === c.id))]);
+  }
 
   const current = queue[index];
   const sessionDone = index >= queue.length;
 
-  async function handleSpeak(wordAr: string, quran?: { chapter: number; verse: number; word: number } | null) {
-    setSpeechError(null);
-    const result = await listenArabic(wordAr, quran);
-    if (!result.ok) setSpeechError(result.message ?? "Couldn't play the pronunciation.");
-  }
+  // Space / Enter flips the card; once it's flipped, 1-4 grade it (left to right).
+  useKeyboardShortcuts(
+    {
+      " ": () => setFlipped((f) => !f),
+      Enter: () => setFlipped((f) => !f),
+      ...Object.fromEntries(buttons.map((b, i) => [String(i + 1), () => flipped && grade(b.quality)])),
+    },
+    !sessionDone
+  );
 
 
   /** A fresh, shuffled practice round over every word — as many times as the learner wants. Not saved to the schedule. */
@@ -76,7 +89,7 @@ export default function VocabularyPractice({
     setIndex(0);
     setFlipped(false);
     setError(null);
-    setSpeechError(null);
+    dismissSpeechError();
     setMode("practice");
     setPractice((p) => ({ known: 0, missed: 0, rounds: p.rounds + 1 }));
   }
@@ -95,18 +108,12 @@ export default function VocabularyPractice({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/srs/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardId: current.cardId, quality }),
-      });
-      if (!res.ok) throw new Error("Review failed to save");
-      const result: { dueAt: string } = await res.json();
+      const result = await fetcher<{ dueAt: string }>("/api/srs/review", { method: "POST", json: { cardId: current.cardId, quality } });
       setOutcomes((prev) => [...prev, { vocabItemId: current.id, wordAr: current.wordAr, quality, dueAt: result.dueAt }]);
       setFlipped(false);
       setIndex((i) => i + 1);
-    } catch {
-      setError("Couldn't save that review — check your connection and try again.");
+    } catch (err) {
+      setError(errorMessage(err, "Couldn't save that review — please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +196,14 @@ export default function VocabularyPractice({
         </div>
       </div>
 
-      <div className={`card-flip mx-auto h-64 w-full cursor-pointer ${flipped ? "flipped" : ""}`} onClick={() => setFlipped((f) => !f)}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-pressed={flipped}
+        aria-label={flipped ? "Show the Arabic side" : "Show the meaning"}
+        className={`card-flip mx-auto h-64 w-full cursor-pointer ${flipped ? "flipped" : ""}`}
+        onClick={() => setFlipped((f) => !f)}
+      >
         <div className="card-inner relative h-full w-full rounded-md border-2 border-emerald-600/30 bg-parchment-50 dark:border-emerald-500/40 dark:bg-parchment-900">
           <div className="card-front absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
             <span className="mb-2 text-xs text-stone-400">Arabic word · click card to flip</span>
@@ -201,7 +215,7 @@ export default function VocabularyPractice({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSpeak(current.wordAr, current.quranOccurrence);
+                  listen(current.wordAr, current.quranOccurrence);
                 }}
                 className="flex items-center gap-1.5 rounded-full p-2 text-sm text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-900/30"
               >
@@ -211,11 +225,7 @@ export default function VocabularyPractice({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const o = current.quranOccurrence!;
-                    setSpeechError(null);
-                    playClip(wordAudioUrl(o.chapter, o.verse, o.word)).catch(() =>
-                      setSpeechError("Couldn't load the recitation — check your connection.")
-                    );
+                    playRecitation(current.quranOccurrence!);
                   }}
                   title={`Recited as ${current.quranOccurrence.surface} in ${current.quranOccurrence.chapter}:${current.quranOccurrence.verse} (audio: Quran.com)`}
                   className="flex items-center gap-1.5 rounded-full p-2 text-sm text-amber-700 transition hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-900/30"
@@ -230,7 +240,7 @@ export default function VocabularyPractice({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSpeechError(null);
+                    dismissSpeechError();
                   }}
                   className="underline"
                 >
@@ -242,12 +252,16 @@ export default function VocabularyPractice({
 
           <div className="card-back absolute inset-0 flex flex-col items-center justify-center rounded-md bg-stone-50 p-6 text-center dark:bg-parchment-800">
             <h3 className="mb-3 text-2xl font-bold">{current.meaningEn}</h3>
-            <p dir="rtl" className="mb-1 font-arabic text-sm text-muted">
-              الجذر: {current.root}
-            </p>
-            <p dir="rtl" className="max-w-full overflow-hidden text-ellipsis rounded-lg border border-stone-200 bg-stone-100 p-2.5 font-arabic text-xs italic text-stone-700 dark:border-stone-700 dark:bg-parchment-900 dark:text-stone-200">
-              {current.exampleAr}
-            </p>
+            {current.root && (
+              <p dir="rtl" className="mb-1 font-arabic text-sm text-muted">
+                الجذر: {current.root}
+              </p>
+            )}
+            {current.exampleAr && (
+              <p dir="rtl" className="max-w-full overflow-hidden text-ellipsis rounded-lg border border-stone-200 bg-stone-100 p-2.5 font-arabic text-xs italic text-stone-700 dark:border-stone-700 dark:bg-parchment-900 dark:text-stone-200">
+                {current.exampleAr}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -256,10 +270,11 @@ export default function VocabularyPractice({
 
       {flipped ? (
         <div className="mt-6 flex justify-center gap-3">
-          {buttons.map((btn) => (
+          {buttons.map((btn, i) => (
             <button
               key={btn.quality}
               onClick={() => grade(btn.quality)}
+              title={`Shortcut: ${i + 1}`}
               disabled={submitting}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${btn.className}`}
             >
@@ -268,7 +283,7 @@ export default function VocabularyPractice({
           ))}
         </div>
       ) : (
-        <p className="mt-6 text-center text-sm text-stone-400">Recall the meaning, then click the card to check yourself.</p>
+        <p className="mt-6 text-center text-sm text-stone-400">Recall the meaning, then click the card (or press Space) to check yourself.</p>
       )}
     </div>
   );
