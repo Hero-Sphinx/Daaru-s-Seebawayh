@@ -27,8 +27,8 @@ type NavbarProps = {
   // first render already matches — no flash, no hydration mismatch.
   initialIsDark: boolean;
   initialArabicScale: number;
-  // Cookie *presence* only — enough to decide whether to show the nav and
-  // account controls. Pages themselves do the real session check.
+  // A live session (src/app/layout.tsx checks it against the database), so a
+  // stale cookie doesn't show the app nav on the login page.
   signedIn: boolean;
 };
 
