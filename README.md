@@ -144,8 +144,13 @@ ROADMAP.md                    Phased implementation plan
 npm install
 npm run dev       # http://localhost:3000
 npm test          # unit tests
+npm run lint      # ESLint
 npm run build     # production build + type check
 ```
+
+To type-check on its own the way CI does, generate Next's route types first
+(`PageProps` and `LayoutProps` live in `.next/types`, which a fresh checkout
+doesn't have): `npx next typegen && npx tsc --noEmit`.
 
 To connect a real database (any Postgres ≥ 15 works — Neon/Supabase/Railway or local):
 
@@ -224,7 +229,9 @@ Two pieces, plus a database:
    run the database steps under *Getting started* once against it.
 2. **CAMeL service** — a container: `services/camel/Dockerfile` bakes in the
    morphology database, listens on `$PORT` (default 8001) and has a
-   `/health` check (it needs ~400 MB of memory). On **Render**: New → Web
+   `/health` check. It uses about 500 MB of memory once the morphology
+   database is loaded, which only just fits a 512 MB instance such as Render's
+   free one. On **Render**: New → Web
    Service → this repo, root directory `services/camel`, runtime Docker,
    health check path `/health`. The free instance sleeps after 15 idle
    minutes (first request then takes ~1 min); a free pinger such as
@@ -253,18 +260,18 @@ GitHub Actions checks every push and pull request:
     `prisma/schema.prisma` still matches the database, and runs the seed
     twice (it must be idempotent too).
 - **CAMeL service** (`.github/workflows/camel.yml`, only when
-  `services/camel/` changes): builds the image, starts it, and checks
-  `/health` and a real `/analyze` call.
+  `services/camel/` changes): builds the image, checks it still has the CPU
+  build of PyTorch (the default GPU build adds about 5GB the service never
+  uses), starts it, and checks `/health` and a real `/analyze` call.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs for npm,
   GitHub Actions, the CAMeL service's pip packages and its Docker base image.
 
-Deploys wait for those checks:
+To make deploys wait for those checks:
 
-- **Vercel**: Project Settings → Deployment Checks lists *App checks* and
-  *Database schema* as required. A production deployment is still built, but
-  it only goes live on the domain once both pass.
-- **Render**: the CAMeL service's auto-deploy is set to *After CI Checks
-  Pass*.
+- **Vercel**: Project Settings → Deployment Checks → Add Checks → GitHub, and
+  select *App checks* and *Database schema*. A production deployment is still
+  built, but it only goes live on the domain once both pass.
+- **Render**: set the CAMeL service's Auto-Deploy to *After CI Checks Pass*.
 
 ## Design system
 
