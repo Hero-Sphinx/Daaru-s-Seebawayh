@@ -1,0 +1,113 @@
+# Runs on every push and pull request. Vercel's Deployment Checks wait for
+# the "App checks" and "Database schema" jobs below before a production
+# deployment goes live, so a commit that fails either one never reaches
+# learners.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+  PRISMA_HIDE_UPDATE_MESSAGE: 1
+
+jobs:
+  app:
+    name: App checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall runs `prisma generate`, which doesn't need a database.
+      - run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      # Every page is rendered on demand, so the build needs no DATABASE_URL.
+      - name: Production build
+        run: npm run build
+
+  database:
+    name: Database schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
+      PGPASSWORD: ci
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # db/schema.sql is the source of truth for a fresh database.
+      - name: Apply db/schema.sql
+        run: psql -h localhost -U postgres -d ci -v ON_ERROR_STOP=1 -q -f db/schema.sql
+
+      # The migrations upgrade databases created before a change. They must be
+      # idempotent, so running them over a fresh schema has to succeed and
+      # change nothing.
+      - name: Re-apply db/migrations (must be idempotent)
+        run: |
+          for f in db/migrations/*.sql; do
+            echo "::group::$f"
+            psql -h localhost -U postgres -d ci -v ON_ERROR_STOP=1 -q -f "$f"
+            echo "::endgroup::"
+          done
+
+      # prisma/schema.prisma is introspected from db/schema.sql and never
+      # hand-edited. Exit code 2 means they have drifted apart.
+      - name: Prisma schema matches the database
+        run: |
+          status=0
+          npx prisma migrate diff --config prisma7.config.ts \
+            --from-config-datasource --to-schema prisma/schema.prisma --exit-code || status=$?
+          if [ "$status" -eq 2 ]; then
+            echo "::error file=prisma/schema.prisma::prisma/schema.prisma no longer matches db/schema.sql. Apply the SQL change to a database and run 'prisma db pull'."
+          fi
+          exit "$status"
+
+      - name: Seed twice (must be idempotent)
+        run: |
+          npx prisma db seed --config prisma7.config.ts
+          npx prisma db seed --config prisma7.config.ts
