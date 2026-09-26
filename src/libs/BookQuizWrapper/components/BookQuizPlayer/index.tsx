@@ -1,18 +1,10 @@
 "use client";
 
-import { Suspense, use, useState } from "react";
+import { useState } from "react";
 import { type PlayableQuestion, PlayIcon, QuizPlayer, SlidersIcon } from "@/components";
-
-interface BookQuizQuestionDTO {
-  id: number;
-  subtype: "fawaid_recall" | "irab_reconstruction" | "book_comprehension" | "sentence_meaning_match";
-  promptEn: string;
-  promptAr?: string;
-  options: string[];
-  correctIndex: number;
-  pageNumber?: number;
-  ruleReference?: string;
-}
+import { shuffle } from "@/helpers";
+import type { PlayableBookQuizQuestion } from "@/types";
+import { fetcher, logQuizAttempt } from "@/constants";
 
 const SUBTYPE_LABELS: Record<string, string> = {
   fawaid_recall: "Fawā'id recall",
@@ -21,85 +13,59 @@ const SUBTYPE_LABELS: Record<string, string> = {
   sentence_meaning_match: "Sentence meaning",
 };
 
-function logAttempt(subtype: string, isCorrect: boolean, userAnswer: string, responseTimeMs: number) {
-  fetch("/api/quiz/attempt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic: subtype, isCorrect, userAnswer, responseTimeMs }),
-  }).catch(() => {});
+async function fetchBank(documentId: string): Promise<PlayableBookQuizQuestion[]> {
+  return (await fetcher<{ questions: PlayableBookQuizQuestion[] }>(`/api/library/${documentId}/quiz`)).questions;
 }
 
-async function fetchBank(documentId: string): Promise<BookQuizQuestionDTO[]> {
-  const res = await fetch(`/api/library/${documentId}/quiz`);
-  if (!res.ok) return [];
-  const body = await res.json();
-  return body.questions ?? [];
-}
-
-// Module-scoped, keyed by documentId — not created inside the component.
-// `use()` requires the promise it reads to stay stable across re-renders;
-// a promise stored in a component's own `useState` still gets recreated
-// (and refetched) every time the component remounts, and Suspense-bound
-// client components can remount for reasons outside our control (dev-mode
-// Fast Refresh, Suspense internals). Caching by documentId here means a
-// remount reuses the same in-flight/resolved promise instead of firing a
-// fresh request.
-const bankPromiseCache = new Map<string, Promise<BookQuizQuestionDTO[]>>();
-
-function loadBank(documentId: string): Promise<BookQuizQuestionDTO[]> {
-  let cached = bankPromiseCache.get(documentId);
-  if (!cached) {
-    cached = fetchBank(documentId);
-    // Don't cache a failure — let the next mount/retry try again instead of
-    // replaying the same rejection forever.
-    cached.catch(() => bankPromiseCache.delete(documentId));
-    bankPromiseCache.set(documentId, cached);
-  }
-  return cached;
-}
-
-export default function BookQuizPlayer({ documentId }: { documentId: string }) {
-  return (
-    <Suspense fallback={<p className="text-sm text-muted">Loading quiz bank…</p>}>
-      <BookQuizPlayerInner documentId={documentId} />
-    </Suspense>
-  );
-}
-
-function BookQuizPlayerInner({ documentId }: { documentId: string }) {
-  const initialBank = use(loadBank(documentId));
-
-  const [bank, setBank] = useState<BookQuizQuestionDTO[]>(initialBank);
+export default function BookQuizPlayer({
+  documentId,
+  initialBank,
+  canRegenerate,
+}: {
+  documentId: string;
+  /** Loaded on the server with the page, so there's no loading flash. */
+  initialBank: PlayableBookQuizQuestion[];
+  /** Owners may throw the bank away and build a fresh one. */
+  canRegenerate: boolean;
+}) {
+  const [bank, setBank] = useState(initialBank);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [subtype, setSubtype] = useState<string>("all");
   const [count, setCount] = useState(5);
-  const [playing, setPlaying] = useState<(BookQuizQuestionDTO & PlayableQuestion)[] | null>(null);
+  const [playing, setPlaying] = useState<(PlayableBookQuizQuestion & PlayableQuestion)[] | null>(null);
 
-  async function handleGenerate() {
+  async function handleGenerate(regenerate = false) {
     setGenerating(true);
     setError(null);
+    setNotice(null);
     try {
-      const res = await fetch(`/api/library/${documentId}/quiz`, {
+      await fetcher(`/api/library/${documentId}/quiz`, {
         method: "POST",
-        // Generation calls CAMeL per Arabic word and, for comprehension
-        // questions, Gemini with retries — worst case is genuinely slow,
-        // not just this request. Cap the wait client-side too so it never
-        // looks like an infinite hang; the server-side work isn't wasted
-        // even if this times out (already-written questions stay cached).
-        signal: AbortSignal.timeout(120_000),
+        json: { regenerate },
+        // Generation calls the word-analysis service per Arabic word and, for
+        // comprehension questions, Gemini with retries — worst case is
+        // genuinely slow. Cap the wait client-side too so it never looks like
+        // an infinite hang; questions already written stay cached.
+        signal: AbortSignal.timeout(180_000),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Generation failed");
       const freshBank = await fetchBank(documentId);
-      bankPromiseCache.set(documentId, Promise.resolve(freshBank));
       setBank(freshBank);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "TimeoutError") {
-        setError("This is taking longer than expected. Check that the CAMeL Tools service is running, then try again.");
-      } else {
-        setError(err instanceof Error ? err.message : "Generation failed");
+      setSubtype("all");
+      if (freshBank.length === 0) {
+        setNotice(
+          "No questions could be made from this book yet. They come from its fawā'id (generate a summary first), from sentences the grammar parser can analyse, and — when the AI service is available — from comprehension questions. Try again later."
+        );
       }
+    } catch (err) {
+      setError(
+        err instanceof DOMException && err.name === "TimeoutError"
+          ? "This is taking longer than expected — the analysis services may be busy. Please try again in a few minutes."
+          : err instanceof Error
+            ? err.message
+            : "Generation failed"
+      );
     } finally {
       setGenerating(false);
     }
@@ -107,15 +73,14 @@ function BookQuizPlayerInner({ documentId }: { documentId: string }) {
 
   function startQuiz() {
     const pool = subtype === "all" ? bank : bank.filter((q) => q.subtype === subtype);
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, count);
-    setPlaying(shuffled.map((q) => ({ ...q, badge: SUBTYPE_LABELS[q.subtype] ?? q.subtype })));
+    setPlaying(shuffle(pool, Math.random).slice(0, count).map((q) => ({ ...q, badge: SUBTYPE_LABELS[q.subtype] ?? q.subtype })));
   }
 
   if (playing) {
     return (
       <QuizPlayer
         questions={playing}
-        onAnswer={(q, isCorrect, chosenText, responseTimeMs) => logAttempt(q.subtype, isCorrect, chosenText, responseTimeMs)}
+        onAnswer={(q, isCorrect, chosenText, responseTimeMs) => logQuizAttempt({ topic: q.subtype, isCorrect, userAnswer: chosenText, responseTimeMs })}
         onRestart={() => setPlaying(null)}
       />
     );
@@ -130,7 +95,7 @@ function BookQuizPlayerInner({ documentId }: { documentId: string }) {
           configured).
         </p>
         <button
-          onClick={handleGenerate}
+          onClick={() => handleGenerate()}
           disabled={generating}
           className="rounded-md bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:opacity-50"
         >
@@ -143,6 +108,7 @@ function BookQuizPlayerInner({ documentId }: { documentId: string }) {
           </p>
         )}
         {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+        {notice && <p className="text-sm text-amber-700 dark:text-amber-400">{notice}</p>}
       </div>
     );
   }
@@ -211,6 +177,15 @@ function BookQuizPlayerInner({ documentId }: { documentId: string }) {
       >
         <PlayIcon className="h-4 w-4" /> Start book quiz
       </button>
+
+      {canRegenerate && (
+        <div className="space-y-1 text-center text-xs text-muted">
+          <button type="button" onClick={() => handleGenerate(true)} disabled={generating} className="underline-offset-2 hover:text-foreground hover:underline disabled:opacity-60">
+            {generating ? "Rebuilding the questions…" : "Rebuild the questions (e.g. after generating new fawā'id)"}
+          </button>
+          {error && <p className="text-rose-600 dark:text-rose-400">{error}</p>}
+        </div>
+      )}
     </div>
   );
 }
