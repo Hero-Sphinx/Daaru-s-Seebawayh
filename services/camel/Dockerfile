@@ -16,7 +16,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY requirements.txt .
 # camel_data doesn't create its data directory itself (fails copying catalogue.json).
+# camel_tools needs PyTorch, and the default build from PyPI bundles about 5GB
+# of NVIDIA GPU libraries. This service runs on CPUs only, so the CPU build is
+# installed first; camel_tools' "torch>=2.0" is then already met and pip leaves
+# it alone. Bump the version here when camel_tools needs a newer torch.
 RUN mkdir -p "$CAMELTOOLS_DATA" \
+ && pip install --no-cache-dir torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu \
  && pip install --no-cache-dir -r requirements.txt \
  && camel_data -i morphology-db-msa-r13
 
