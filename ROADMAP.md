@@ -526,3 +526,46 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
   notes; nobody sees anyone else's private notes. **Not built:** email
   invitations (no email provider — the other person must already have an
   account), real-time co-editing.
+
+## Revamp (done)
+
+A restructure and hardening pass with no visual changes. The look of every
+page is the same; the code layout, the server layer and a set of behaviour
+bugs changed.
+
+- [x] **Layout** (see README "Project structure"): thin `app/**/page.tsx`
+  and `route.ts`, one `src/libs/<Page>Wrapper` per page, shared UI in
+  `src/layouts` and `src/components`, pure logic in `src/helpers`,
+  everything server-only under `src/server`, DTOs in `src/types`, and
+  tests in `tests/` mirroring `src/`. Imports go through the top-level
+  barrels.
+- [x] **One route pipeline**: every API route goes through `withAuth`
+  (`src/server/lib/handler.ts`), which does the real session check,
+  validates input with zod (`src/server/validators/<domain>/validate.ts`)
+  and answers errors as `{ error }` JSON with a proper status. Malformed
+  JSON is a 400 naming the field, not a 500.
+- [x] **Security fixes**: four AI-backed routes (`/api/irab/parse`,
+  `/api/quiz/meaning`, `/api/vocabulary/lookup`, `/api/vocabulary/enrich`)
+  had no real session check, so any cookie could spend the Gemini quota.
+  Vocabulary import and signup now have size limits.
+- [x] **Data bugs**: sentence-meaning book quiz answers were never saved;
+  regenerating a summary duplicated the AI fawā'id; book quizzes could
+  not be rebuilt and could be built twice at once (now one shared build
+  under a per-document advisory lock); the quiz streak update runs in one
+  transaction; active users were signed out 30 days after sign-in because
+  the session cookie never slid.
+- [x] **Uploads**: the size limit follows the host (Vercel caps request
+  bodies at 4.5MB, the app used to advertise 20MB) and oversized bodies
+  are refused before buffering. Long routes set `maxDuration`.
+- [x] **UX**: keyboard shortcuts for flashcards (Space/Enter, 1-4),
+  quizzes (1-9, Enter) and the reader (arrow keys, `?page=` in the URL);
+  stale word lookups and searches can no longer overwrite newer ones; a
+  quiz results list of missed questions; two-step delete in the word
+  bank; readable errors from one client fetcher
+  (`src/constants/fetcher.ts`); styled 404, error and loading screens
+  that respect dark mode; no horizontal scroll at phone width.
+
+**Exit criteria (met):** `tsc`, `eslint` and `npm test` (245 tests) pass,
+`next build` passes, every API route checked against a real Postgres, and
+a browser pass through signup, vocabulary, library upload and reading,
+quizzes, Qur'an, dark mode and phone width with no console errors.
