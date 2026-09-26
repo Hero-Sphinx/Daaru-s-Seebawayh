@@ -30,19 +30,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The image is about 10GB (camel_tools pulls in PyTorch with its CUDA
-      # libraries), more than a runner has free by default. Remove preinstalled
-      # SDKs this job doesn't use. The image is too big for GitHub's 10GB
-      # build cache as well, so it is built from scratch each time; that only
-      # happens when services/camel changes.
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          docker system prune -af
-          df -h /
-
+      # About 2GB with the CPU build of PyTorch. Built from scratch each time,
+      # which only happens when services/camel changes.
       - name: Build image
         run: docker build -t dsb-camel:ci services/camel
+
+      # The Dockerfile installs the CPU build of PyTorch on purpose; the default
+      # GPU build adds about 5GB this service never uses.
+      - name: PyTorch is the CPU build
+        run: |
+          docker run --rm dsb-camel:ci python -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda); assert torch.version.cuda is None, 'the GPU build of PyTorch crept back in'"
+          docker image ls dsb-camel:ci --format "image size: {{.Size}}"
 
       - name: Start the service
         run: |
