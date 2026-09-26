@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { DocumentRole, DocumentShareDTO as Share } from "@/types";
+import { errorMessage, fetcher } from "@/constants";
 
 const ROLE_LABEL: Record<string, string> = {
   viewer: "Can read",
@@ -30,14 +31,12 @@ export default function LibrarySharePanel({
     setBusy(true);
     setMessage(null);
     try {
-      const res = await fetch(url, init);
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error ?? "Something went wrong");
+      await fetcher(url, init);
       setMessage({ kind: "ok", text: okText });
       after?.();
       router.refresh();
     } catch (e) {
-      setMessage({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong" });
+      setMessage({ kind: "error", text: errorMessage(e) });
     } finally {
       setBusy(false);
     }
