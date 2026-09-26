@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { PUBLIC_PATHS, SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "@/constants/auth";
+import {
+  loginPathFor,
+  PUBLIC_PATHS,
+  REQUEST_PATH_HEADER,
+  SESSION_COOKIE,
+  SESSION_TTL_MS,
+  sessionCookieOptions,
+} from "@/constants/auth";
 
 /**
  * Optimistic auth gate: only checks that a session cookie is *present*, so
@@ -13,6 +20,7 @@ export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const session = request.cookies.get(SESSION_COOKIE)?.value;
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isApi = pathname.startsWith("/api/");
 
   if (session) {
     // Slide the cookie along with the DB session (see getSessionUser), so an
@@ -21,8 +29,14 @@ export function proxy(request: NextRequest) {
     // Page loads only (GET): never on an API call, and never on a POST —
     // server actions like sign-out set or clear this cookie themselves, and
     // a second Set-Cookie from here could undo that.
-    const response = NextResponse.next();
-    if (request.method === "GET" && !pathname.startsWith("/api/")) {
+    // The cookie may still be stale, in which case getCurrentUserId sends the
+    // page to /login. Pass the path along so it can come back here after
+    // signing in. Always overwritten, so a client can't supply its own.
+    const requestHeaders = new Headers(request.headers);
+    if (isApi) requestHeaders.delete(REQUEST_PATH_HEADER);
+    else requestHeaders.set(REQUEST_PATH_HEADER, `${pathname}${search}`);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    if (request.method === "GET" && !isApi) {
       response.cookies.set(SESSION_COOKIE, session, sessionCookieOptions(new Date(Date.now() + SESSION_TTL_MS)));
     }
     return response;
@@ -34,12 +48,10 @@ export function proxy(request: NextRequest) {
   // /login -> / -> getCurrentUserId redirects -> /login -> ...)
   if (isPublic) return NextResponse.next();
 
-  if (pathname.startsWith("/api/")) {
+  if (isApi) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
-  const loginUrl = new URL("/login", request.url);
-  if (pathname !== "/") loginUrl.searchParams.set("next", `${pathname}${search}`);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.redirect(new URL(loginPathFor(`${pathname}${search}`), request.url));
 }
 
 export const config = {
