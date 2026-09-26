@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { errorMessage, fetcher, formatMegabytes } from "@/constants";
 
-export default function LibraryUpload() {
+export default function LibraryUpload({ maxUploadBytes }: { maxUploadBytes: number }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -25,9 +26,7 @@ export default function LibraryUpload() {
       if (title.trim()) formData.append("title", title.trim());
       if (author.trim()) formData.append("author", author.trim());
 
-      const res = await fetch("/api/library", { method: "POST", body: formData });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Upload failed");
+      const body = await fetcher<{ notice?: string }>("/api/library", { method: "POST", body: formData });
 
       setFile(null);
       setTitle("");
@@ -38,7 +37,7 @@ export default function LibraryUpload() {
       if (body.notice) setNotice(body.notice);
       else setOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(errorMessage(err, "Upload failed"));
     } finally {
       setBusy(false);
     }
@@ -58,7 +57,9 @@ export default function LibraryUpload() {
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-3 rounded-lg border border-stone-200 bg-white p-5 dark:border-stone-700/60 dark:bg-parchment-800">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Upload a PDF</h3>
+        <h3 className="font-medium">
+          Upload a PDF <span className="text-xs font-normal text-muted">(up to {formatMegabytes(maxUploadBytes)})</span>
+        </h3>
         <button type="button" onClick={() => setOpen(false)} className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
           Cancel
         </button>
@@ -66,7 +67,19 @@ export default function LibraryUpload() {
       <input
         type="file"
         accept="application/pdf"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          const picked = e.target.files?.[0] ?? null;
+          setNotice(null);
+          // Say so now, rather than after uploading the whole file.
+          if (picked && picked.size > maxUploadBytes) {
+            setError(`That file is ${formatMegabytes(picked.size)} — the limit here is ${formatMegabytes(maxUploadBytes)}.`);
+            setFile(null);
+            e.target.value = "";
+            return;
+          }
+          setError(null);
+          setFile(picked);
+        }}
         required
         className="block w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-700 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white dark:text-stone-300"
       />
