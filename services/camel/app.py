@@ -87,7 +87,9 @@ def _normalize_root(root: str | None) -> str | None:
     return " ".join(letters) if letters else None
 
 
-@app.get("/health")
+# HEAD too: uptime monitors (UptimeRobot's free plan) check with HEAD requests,
+# which a GET-only route answers with 405.
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {"status": "ok"}
 
