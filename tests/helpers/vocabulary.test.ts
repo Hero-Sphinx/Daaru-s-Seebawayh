@@ -32,4 +32,10 @@ describe("parseBulkVocabularyText", () => {
     const rows = parseBulkVocabularyText("  كِتَاب  ,  book  ");
     expect(rows).toEqual([{ wordAr: "كِتَاب", meaningEn: "book", root: undefined, transliteration: undefined, exampleAr: undefined }]);
   });
+
+  it("keeps commas inside a quoted field", () => {
+    expect(parseBulkVocabularyText('كَتَبَ,"to write, to record",ك ت ب,,"قَالَ ""نَعَمْ"""')).toEqual([
+      { wordAr: "كَتَبَ", meaningEn: "to write, to record", root: "ك ت ب", transliteration: undefined, exampleAr: 'قَالَ "نَعَمْ"' },
+    ]);
+  });
 });
