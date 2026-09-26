@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
 import { cache } from "react";
-import { SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "@/constants";
+import { loginPathFor, REQUEST_PATH_HEADER, SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "@/constants";
 import { db } from "@/server/databases";
 
 /**
@@ -88,10 +88,15 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   return { id: session.users.id, email: session.users.email, displayName: session.users.display_name };
 });
 
-/** For pages / server components: the signed-in user's id, or a redirect to /login. */
+/**
+ * For pages / server components: the signed-in user's id, or a redirect to
+ * /login. The proxy already redirects when there's no cookie at all; this
+ * catches an expired or revoked one, and still returns the learner to the
+ * page they asked for (the path comes from the proxy, see REQUEST_PATH_HEADER).
+ */
 export async function getCurrentUserId(): Promise<string> {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(loginPathFor((await headers()).get(REQUEST_PATH_HEADER)));
   return user.id;
 }
 
