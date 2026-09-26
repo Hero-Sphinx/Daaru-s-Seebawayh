@@ -1,0 +1,40 @@
+# Weekly dependency update PRs. Each one runs through CI before it can be
+# merged. Minor and patch updates are grouped into one PR per ecosystem to
+# keep the noise down; major versions come separately so they get a proper look.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The CAMeL Tools service (deployed separately on Render).
+  - package-ecosystem: pip
+    directory: /services/camel
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      pip-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /services/camel
+    schedule:
+      interval: weekly
+      day: monday
