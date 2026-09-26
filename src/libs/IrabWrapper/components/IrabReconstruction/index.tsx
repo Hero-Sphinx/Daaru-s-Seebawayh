@@ -2,25 +2,12 @@
 
 import { useState } from "react";
 import { CheckIcon, XIcon } from "@/components";
-import { GRAMMATICAL_ROLES, ROLE_CODES } from "@/constants";
+import { GRAMMATICAL_ROLES, logQuizAttempt, ROLE_CODES } from "@/constants";
 import { gradeReconstruction, isReconstructable, missingAnswers, type ReconstructionGrade, type TokenAnswer } from "@/helpers";
 import type { RoleCode, SentenceAnalysis } from "@/types";
+import { fetcher } from "@/constants";
 
 const ROOT_VALUE = "root";
-
-function logAttempt(grade: ReconstructionGrade, sentence: SentenceAnalysis) {
-  fetch("/api/quiz/attempt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      templateCode: "irab_reconstruction",
-      isCorrect: grade.allCorrect,
-      userAnswer: `${sentence.sourceLabel}: ${grade.points}/${grade.maxPoints}`,
-    }),
-  }).catch(() => {
-    // Best-effort — never interrupt practice over a logging failure.
-  });
-}
 
 /**
  * I'rab reconstruction (ROADMAP.md Phase 5): the learner builds the
@@ -53,15 +40,11 @@ export default function IrabReconstruction({ sentences }: { sentences: SentenceA
     setCustomBusy(true);
     setCustomError(null);
     try {
-      const res = await fetch("/api/irab/parse", {
+      // No translation needed to practise — don't spend Gemini quota.
+      const { sentence: parsed } = await fetcher<{ sentence: SentenceAnalysis }>("/api/irab/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // No translation needed to practise — don't spend Gemini quota.
-        body: JSON.stringify({ text: custom, includeTranslation: false }),
+        json: { text: custom, includeTranslation: false },
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Parsing failed");
-      const parsed = body.sentence as SentenceAnalysis;
       if (!isReconstructable(parsed)) {
         throw new Error(
           "The parser couldn't verify every word of that sentence, so there's no complete answer key. Try a fully-diacritized sentence in one of the supported patterns."
@@ -89,7 +72,8 @@ export default function IrabReconstruction({ sentences }: { sentences: SentenceA
     setShowMissing(false);
     const g = gradeReconstruction(sentence, answers);
     setGrade(g);
-    logAttempt(g, sentence);
+    // Best-effort — never interrupt practice over a logging failure.
+    logQuizAttempt({ templateCode: "irab_reconstruction", isCorrect: g.allCorrect, userAnswer: `${sentence.sourceLabel}: ${g.points}/${g.maxPoints}` });
   }
 
   const ordered = sentence ? [...sentence.tokens].sort((a, b) => a.positionInUnit - b.positionInUnit) : [];
