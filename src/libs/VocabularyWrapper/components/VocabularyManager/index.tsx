@@ -3,32 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { VolumeIcon, XIcon } from "@/components";
-import { isArabicWord, listenArabic, parseBulkVocabularyText, playClip, wordAudioUrl } from "@/helpers";
+import { isArabicWord, parseBulkVocabularyText } from "@/helpers";
+import { useListen } from "@/hooks";
 import type { MorphCandidate, VocabularyCardDTO, WordLookupResponse as LookupResponse } from "@/types";
+import { errorMessage, FetchError, fetcher } from "@/constants";
 
 type Mode = "single" | "bulk";
 
 async function postVocabulary(items: { wordAr: string; meaningEn: string; root?: string; transliteration?: string; exampleAr?: string }[]) {
-  const res = await fetch("/api/vocabulary", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? "Failed to save vocabulary");
-  }
+  await fetcher("/api/vocabulary", { method: "POST", json: { items } });
 }
 
 async function lookupVocabularyWord(input: string): Promise<LookupResponse> {
-  const res = await fetch("/api/vocabulary/lookup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input }),
-  });
-  const body: LookupResponse & { error?: string } = await res.json();
-  if (!res.ok) throw new Error(body.error ?? "Auto-fill failed");
-  return body;
+  return fetcher<LookupResponse>("/api/vocabulary/lookup", { method: "POST", json: { input } });
 }
 
 export default function VocabularyManager({ items }: { items: VocabularyCardDTO[] }) {
@@ -45,18 +32,14 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
   const [bulkText, setBulkText] = useState("");
 
   const [enriching, setEnriching] = useState(false);
-  const [enrichCandidates, setMorphCandidates] = useState<MorphCandidate[] | null>(null);
+  const [enrichCandidates, setEnrichCandidates] = useState<MorphCandidate[] | null>(null);
   const [enrichError, setEnrichError] = useState<string | null>(null);
   const [aiFilledFields, setAiFilledFields] = useState<Set<"meaningEn" | "transliteration">>(new Set());
 
-  const [speechError, setSpeechError] = useState<string | null>(null);
-
-  async function handleSpeak(wordAr: string, quran?: { chapter: number; verse: number; word: number } | null) {
-    setSpeechError(null);
-    const result = await listenArabic(wordAr, quran);
-    if (!result.ok) setSpeechError(result.message ?? "Couldn't play the pronunciation.");
-  }
-
+  const { listen, playRecitation, speechError, dismissSpeechError } = useListen();
+  /** The word whose delete button was pressed once — a second press confirms. */
+  const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
 
   /**
    * Resolves whatever the user typed — Arabic script, or a transliteration
@@ -69,7 +52,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
     if (!wordAr.trim() || enriching) return;
     setEnriching(true);
     setEnrichError(null);
-    setMorphCandidates(null);
+    setEnrichCandidates(null);
     try {
       const body = await lookupVocabularyWord(wordAr);
       setWordAr(body.arabicWord);
@@ -90,7 +73,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
       if (candidates.length === 1) {
         applyCandidate(candidates[0]);
       } else if (candidates.length > 1) {
-        setMorphCandidates(candidates);
+        setEnrichCandidates(candidates);
       } else if (!body.aiAssisted) {
         setEnrichError("No morphological analysis found for that word — it may be a name, loanword, or misspelling.");
       }
@@ -104,7 +87,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
   function applyCandidate(candidate: MorphCandidate) {
     if (candidate.root) setRoot(candidate.root);
     if (candidate.diac) setWordAr(candidate.diac);
-    setMorphCandidates(null);
+    setEnrichCandidates(null);
   }
 
   async function handleSingleSubmit(e: React.FormEvent) {
@@ -170,10 +153,21 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
   }
 
   async function handleDelete(id: number) {
+    if (confirmingDelete !== id) {
+      setConfirmingDelete(id);
+      return;
+    }
+    setConfirmingDelete(null);
     setBusy(true);
+    setListError(null);
     try {
-      await fetch(`/api/vocabulary/${id}`, { method: "DELETE" });
+      await fetcher(`/api/vocabulary/${id}`, { method: "DELETE" }).catch((err) => {
+        // Already gone is as good as deleted.
+        if (!(err instanceof FetchError && err.status === 404)) throw err;
+      });
       router.refresh();
+    } catch (err) {
+      setListError(errorMessage(err, "Couldn't delete that word — please try again."));
     } finally {
       setBusy(false);
     }
@@ -210,7 +204,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
                 placeholder={`Arabic word, or a transliteration if you don't know the spelling (e.g. "kitab") *`}
                 dir="auto"
                 required
-                className="flex-1 rounded-md border border-stone-300 bg-stone-50 px-3 py-2 font-arabic text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-stone-600 dark:bg-parchment-900"
+                className="min-w-0 flex-1 rounded-md border border-stone-300 bg-stone-50 px-3 py-2 font-arabic text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-stone-600 dark:bg-parchment-900"
               />
               <button
                 type="button"
@@ -299,7 +293,8 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
               className="w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-stone-600 dark:bg-parchment-900"
             />
             <p className="text-xs text-muted">
-              One word per line: <code>arabic,meaning</code> required, root/transliteration/example optional.
+              One word per line: <code>arabic,meaning</code> required, root/transliteration/example optional. Put a field with
+              commas in quotes: <code>كَتَبَ,&quot;to write, to record&quot;</code>
             </p>
             <button
               type="submit"
@@ -319,11 +314,12 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
         {speechError && (
           <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
             {speechError}{" "}
-            <button onClick={() => setSpeechError(null)} className="underline">
+            <button onClick={dismissSpeechError} className="underline">
               Dismiss
             </button>
           </p>
         )}
+        {listError && <p className="mb-3 text-sm text-rose-600 dark:text-rose-400">{listError}</p>}
         {items.length === 0 ? (
           <p className="text-sm text-muted">No words yet — add one above to get started.</p>
         ) : (
@@ -339,7 +335,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
                       {item.wordAr}
                     </span>
                     <button
-                      onClick={() => handleSpeak(item.wordAr, item.quranOccurrence)}
+                      onClick={() => listen(item.wordAr, item.quranOccurrence)}
                       aria-label={`Listen to ${item.wordAr}`}
                       className="text-emerald-600 transition hover:text-emerald-500 dark:text-emerald-400"
                     >
@@ -347,13 +343,7 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
                     </button>
                     {item.quranOccurrence && (
                       <button
-                        onClick={() => {
-                          const o = item.quranOccurrence!;
-                          setSpeechError(null);
-                          playClip(wordAudioUrl(o.chapter, o.verse, o.word)).catch(() =>
-                            setSpeechError("Couldn't load the recitation — check your connection.")
-                          );
-                        }}
+                        onClick={() => playRecitation(item.quranOccurrence!)}
                         title={`Hear it recited in the Qur'an: ${item.quranOccurrence.surface} (${item.quranOccurrence.chapter}:${item.quranOccurrence.verse}) — audio: Quran.com`}
                         aria-label={`Hear ${item.wordAr} recited in the Qur'an`}
                         className="rounded-full px-1.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-600/40 transition hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-900/30"
@@ -364,14 +354,29 @@ export default function VocabularyManager({ items }: { items: VocabularyCardDTO[
                   </div>
                   <div className="text-muted">{item.meaningEn}</div>
                 </div>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  disabled={busy}
-                  aria-label={`Delete ${item.wordAr}`}
-                  className="shrink-0 rounded-full p-1 text-stone-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950"
-                >
-                  <XIcon className="h-3.5 w-3.5" />
-                </button>
+                {confirmingDelete === item.id ? (
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs">
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      disabled={busy}
+                      className="rounded-full bg-rose-600 px-2 py-0.5 font-semibold text-white transition hover:bg-rose-500"
+                    >
+                      Delete
+                    </button>
+                    <button onClick={() => setConfirmingDelete(null)} className="text-muted hover:underline">
+                      Keep
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={busy}
+                    aria-label={`Delete ${item.wordAr}`}
+                    className="shrink-0 rounded-full p-1 text-stone-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950"
+                  >
+                    <XIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
