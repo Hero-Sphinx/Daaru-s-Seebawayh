@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
+import { errorMessage, fetcher } from "@/constants";
 
 type Mode = "text" | "root";
 
@@ -30,20 +31,23 @@ export default function LibrarySearch() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Only the latest search may update the results — an earlier, slower one is dropped.
+  const latest = useRef(0);
+
   async function search(q: string, m: Mode) {
     if (!q.trim()) return;
+    const ticket = ++latest.current;
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/library/search?mode=${m}&q=${encodeURIComponent(q.trim())}`);
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Search failed");
-      setResponse(body as SearchResponse);
+      const body = await fetcher<SearchResponse>(`/api/library/search?mode=${m}&q=${encodeURIComponent(q.trim())}`);
+      if (ticket === latest.current) setResponse(body);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Search failed");
+      if (ticket !== latest.current) return;
+      setError(errorMessage(e, "Search failed"));
       setResponse(null);
     } finally {
-      setBusy(false);
+      if (ticket === latest.current) setBusy(false);
     }
   }
 
@@ -68,7 +72,7 @@ export default function LibrarySearch() {
             onChange={(e) => setQuery(e.target.value)}
             dir="rtl"
             placeholder={mode === "root" ? "A root (ك ت ب) or any word from it (يكتبون)…" : "Search your library for a word or phrase…"}
-            className="flex-1 rounded-md border border-stone-300 bg-white px-4 py-2 font-arabic text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-stone-600 dark:bg-parchment-900"
+            className="min-w-0 flex-1 rounded-md border border-stone-300 bg-white px-4 py-2 font-arabic text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-stone-600 dark:bg-parchment-900"
           />
           <button
             type="submit"
