@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ScrollIcon, TrashIcon } from "@/components";
 import type { LibraryDocumentDTO } from "@/types";
+import { errorMessage, FetchError, fetcher } from "@/constants";
 
 const STATUS: Record<string, { label: string; pill: string; dot: string }> = {
   completed: { label: "Ready", pill: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200", dot: "bg-emerald-500" },
@@ -38,11 +39,13 @@ export default function LibraryDocumentCard({ doc, sharedBy }: { doc: LibraryDoc
     setDeleting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/library/${doc.id}`, { method: "DELETE" });
-      if (!res.ok && res.status !== 404) throw new Error("Failed to delete");
+      await fetcher(`/api/library/${doc.id}`, { method: "DELETE" }).catch((err) => {
+        // Already gone is as good as deleted.
+        if (!(err instanceof FetchError && err.status === 404)) throw err;
+      });
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      setError(errorMessage(err, "Couldn't delete the document."));
       setDeleting(false);
       setConfirming(false);
     }
