@@ -4,6 +4,7 @@ import { TIMEZONE_COOKIE, wisdomIndexForDate } from "@/constants";
 import { daysAgo, realName } from "@/helpers";
 import { db } from "@/server/databases";
 import type { DashboardData } from "@/types";
+import { accessibleDocumentsWhere } from "../library/access";
 
 const MASTERED_REPETITIONS_THRESHOLD = 2;
 
@@ -23,21 +24,23 @@ async function learnerTimeZone(): Promise<string> {
 
 export async function getDashboard(userId: string): Promise<DashboardData> {
   const weekAgo = daysAgo(7);
+  // Same rule as the Library page: documents the learner owns or has been shared.
+  const myDocuments = accessibleDocumentsWhere(userId);
   const [cardsDueToday, wordsMastered, totalAttempts7d, correctAttempts7d, documentsInLibrary, recentDocuments, recentFawaid, me, timeZone] =
     await Promise.all([
       db.srs_cards.count({ where: { user_id: userId, due_at: { lte: new Date() } } }),
       db.srs_cards.count({ where: { user_id: userId, repetitions: { gte: MASTERED_REPETITIONS_THRESHOLD } } }),
       db.quiz_attempts.count({ where: { user_id: userId, answered_at: { gte: weekAgo } } }),
       db.quiz_attempts.count({ where: { user_id: userId, answered_at: { gte: weekAgo }, is_correct: true } }),
-      db.library_documents.count({ where: { owner_user_id: userId } }),
+      db.library_documents.count({ where: myDocuments }),
       db.library_documents.findMany({
-        where: { owner_user_id: userId },
+        where: myDocuments,
         orderBy: { uploaded_at: "desc" },
         take: 5,
         select: { id: true, title: true, processing_status: true },
       }),
       db.fawaid.findMany({
-        where: { library_text_units: { library_documents: { owner_user_id: userId } } },
+        where: { library_text_units: { library_documents: myDocuments } },
         orderBy: { created_at: "desc" },
         take: 5,
         select: { id: true, title: true, category: true },
