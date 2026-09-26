@@ -4,16 +4,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, MobileSheet, XIcon } from "@/components";
 import { isArabicWord, isMostlyArabic, rangesOverlap } from "@/helpers";
-import type { AnnotationDTO, MorphCandidate, ReaderPage as Page } from "@/types";
-
-interface WordLookupResult {
-  arabicWord: string;
-  meaningEn: string | null;
-  aiAssisted: boolean;
-  camelCandidates: MorphCandidate[];
-  /** From parsing the word's actual sentence (see fetchRole) — only ever set when the deterministic parser could resolve it; real book text is usually undiacritized, so this is often absent, and that's correct, not a bug. */
-  role?: { nameEn: string; nameAr: string; caseSignEn: string; caseSignAr: string };
-}
+import { useKeyboardShortcuts, useWordLookup, type WordLookupResult } from "@/hooks";
+import type { AnnotationDTO, ReaderPage as Page } from "@/types";
+import { errorMessage, fetcher } from "@/constants";
 
 const STRIP_PUNCTUATION_RE = /^[.,!?؟،؛:"'“”()\-]+|[.,!?؟،؛:"'“”()\-]+$/g;
 
@@ -226,25 +219,33 @@ export default function LibraryReader({
 }) {
   const router = useRouter();
   const [pageIndex, setPageIndex] = useState(() => Math.min(Math.max(initialPageIndex, 0), Math.max(pages.length - 1, 0)));
-  const [lookupWord, setLookupWord] = useState<string | null>(null);
-  const [result, setResult] = useState<WordLookupResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [meaningLoading, setMeaningLoading] = useState(false);
+  const lookup = useWordLookup();
   const [annotating, setAnnotating] = useState(false);
   const [draft, setDraft] = useState<{ start: number; end: number; quote: string } | null>(null);
+  const closeLookup = lookup.close;
   const closeSheet = useCallback(() => {
-    setLookupWord(null);
+    closeLookup();
     setDraft(null);
-  }, []);
+  }, [closeLookup]);
 
   const page = pages[pageIndex];
   const pageNotes = page ? annotations.filter((a) => a.textUnitId === page.id) : [];
 
   function goToPage(i: number) {
-    setPageIndex(i);
+    const next = Math.min(Math.max(i, 0), pages.length - 1);
+    if (next === pageIndex) return;
+    setPageIndex(next);
     setDraft(null);
+    // Keep ?page= in step, so a reload or a shared link opens this page.
+    const url = new URL(window.location.href);
+    const n = pages[next].pageNumber;
+    if (n) url.searchParams.set("page", String(n));
+    else url.searchParams.delete("page");
+    window.history.replaceState(window.history.state, "", url);
   }
+
+  // ← / → turn pages, like the Prev / Next buttons.
+  useKeyboardShortcuts({ ArrowLeft: () => goToPage(pageIndex - 1), ArrowRight: () => goToPage(pageIndex + 1) }, !draft);
 
   function captureSelection(container: HTMLElement) {
     if (!annotating || !page) return;
@@ -252,95 +253,6 @@ export default function LibraryReader({
     if (!sel) return;
     const quote = page.text.slice(sel.start, sel.end).trim();
     if (quote) setDraft({ ...sel, quote });
-  }
-
-  async function showMeaning() {
-    if (!lookupWord || !result) return;
-    const word = lookupWord;
-    setMeaningLoading(true);
-    try {
-      const res = await fetch("/api/vocabulary/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: word, withMeaning: true }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Meaning lookup failed");
-      if (!body.meaningEn) throw new Error("No meaning available right now (the AI service may be unconfigured or out of quota).");
-      setResult((r) => (r && lookupWord === word ? { ...r, meaningEn: body.meaningEn, aiAssisted: body.aiAssisted ?? true } : r));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Meaning lookup failed");
-    } finally {
-      setMeaningLoading(false);
-    }
-  }
-
-  async function handleWordClick(word: string, sentence: string) {
-    if (!word) return;
-    setLookupWord(word);
-    setResult(null);
-    setError(null);
-    setLoading(true);
-    try {
-      // Two independent lookups, run in parallel:
-      // 1. /api/vocabulary/lookup — CAMeL root/lemma/POS only (withMeaning:
-      //    false): the Gemini meaning is fetched when the learner asks for
-      //    it (showMeaning below), so reading a page doesn't spend the
-      //    daily AI quota word by word. A meaning already cached comes back
-      //    anyway, free.
-      // 2. /api/irab/parse on the word's actual sentence — the same
-      //    deterministic parser the I'rab Workspace uses, so a click can
-      //    show the word's grammatical role, not just isolated morphology.
-      //    includeTranslation: false so this never costs Gemini quota — a
-      //    reader click shouldn't compete with the app's other AI features
-      //    for the same small daily budget. Real book text is usually
-      //    undiacritized, so this will often resolve nothing — that's the
-      //    parser correctly declining to guess, not a bug; role is simply
-      //    omitted when it can't be determined.
-      const [lookupSettled, roleSettled] = await Promise.allSettled([
-        fetch("/api/vocabulary/lookup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input: word, withMeaning: false }),
-        }).then(async (res) => {
-          const body = await res.json();
-          if (!res.ok) throw new Error(body.error ?? "Lookup failed");
-          return body;
-        }),
-        fetch("/api/irab/parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: sentence, includeTranslation: false }),
-        }).then(async (res) => (res.ok ? res.json() : null)),
-      ]);
-
-      if (lookupSettled.status === "rejected") {
-        throw lookupSettled.reason instanceof Error ? lookupSettled.reason : new Error("Lookup failed");
-      }
-      const lookupBody = lookupSettled.value;
-
-      let role: WordLookupResult["role"];
-      if (roleSettled.status === "fulfilled" && roleSettled.value) {
-        const parsed = roleSettled.value.sentence;
-        const token = parsed?.tokens.find((t: { surfaceForm: string }) => t.surfaceForm === word);
-        const edge = token && parsed.edges.find((e: { tokenId: number }) => e.tokenId === token.id);
-        if (token && edge && token.caseSign) {
-          role = { nameEn: edge.role.nameEn, nameAr: edge.role.nameAr, caseSignEn: token.caseSign.signEn, caseSignAr: token.caseSign.signAr };
-        }
-      }
-
-      setResult({
-        arabicWord: lookupBody.arabicWord,
-        meaningEn: lookupBody.meaningEn ?? null,
-        aiAssisted: lookupBody.aiAssisted ?? false,
-        camelCandidates: lookupBody.camelCandidates ?? [],
-        role,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Lookup failed");
-    } finally {
-      setLoading(false);
-    }
   }
 
   if (pages.length === 0) {
@@ -352,7 +264,7 @@ export default function LibraryReader({
       <div className="space-y-4">
         <div className="flex items-center justify-between text-sm">
           <button
-            onClick={() => goToPage(Math.max(0, pageIndex - 1))}
+            onClick={() => goToPage(pageIndex - 1)}
             disabled={pageIndex === 0}
             className="flex items-center gap-1 rounded-lg bg-stone-100 px-3 py-1.5 text-stone-600 transition hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-300"
           >
@@ -362,7 +274,7 @@ export default function LibraryReader({
             Page {page.pageNumber ?? pageIndex + 1} of {pages.length}
           </span>
           <button
-            onClick={() => goToPage(Math.min(pages.length - 1, pageIndex + 1))}
+            onClick={() => goToPage(pageIndex + 1)}
             disabled={pageIndex === pages.length - 1}
             className="flex items-center gap-1 rounded-lg bg-stone-100 px-3 py-1.5 text-stone-600 transition hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-300"
           >
@@ -404,7 +316,7 @@ export default function LibraryReader({
         >
           <ClickableArabicText
             text={page.text}
-            onWordClick={handleWordClick}
+            onWordClick={lookup.lookUp}
             highlights={pageNotes.map((a) => ({ start: a.start, end: a.end }))}
             selectable={annotating}
           />
@@ -419,42 +331,42 @@ export default function LibraryReader({
       <aside className="space-y-4">
         {/* The tapped word's details and the note being written: a bottom sheet on phones, the side column on large screens. */}
         <MobileSheet
-          open={lookupWord !== null || draft !== null}
+          open={lookup.word !== null || draft !== null}
           onClose={closeSheet}
           title={draft ? "New note" : "Word details"}
         >
-        <div className="space-y-4">
-        {draft && (
-          <NoteForm
-            documentId={documentId}
-            textUnitId={page.id}
-            draft={draft}
-            onDone={() => {
-              setDraft(null);
-              window.getSelection()?.removeAllRanges();
-              router.refresh();
-            }}
-            onCancel={() => setDraft(null)}
-          />
-        )}
-        {lookupWord ? (
-          <WordLookupPanel
-            word={lookupWord}
-            result={result}
-            loading={loading}
-            error={error}
-            onClose={() => setLookupWord(null)}
-            onShowMeaning={showMeaning}
-            meaningLoading={meaningLoading}
-          />
-        ) : (
-          !annotating && (
-            <div className="rounded-lg border border-stone-200 bg-white p-4 text-xs text-stone-500 dark:border-stone-700/60 dark:bg-parchment-800 dark:text-stone-400">
-              Click a word in the text to see its morphological breakdown here.
-            </div>
-          )
-        )}
-        </div>
+          <div className="space-y-4">
+            {draft && (
+              <NoteForm
+                documentId={documentId}
+                textUnitId={page.id}
+                draft={draft}
+                onDone={() => {
+                  setDraft(null);
+                  window.getSelection()?.removeAllRanges();
+                  router.refresh();
+                }}
+                onCancel={() => setDraft(null)}
+              />
+            )}
+            {lookup.word ? (
+              <WordLookupPanel
+                word={lookup.word}
+                result={lookup.result}
+                loading={lookup.loading}
+                error={lookup.error}
+                onClose={lookup.close}
+                onShowMeaning={lookup.showMeaning}
+                meaningLoading={lookup.meaningLoading}
+              />
+            ) : (
+              !annotating && (
+                <div className="rounded-lg border border-stone-200 bg-white p-4 text-xs text-stone-500 dark:border-stone-700/60 dark:bg-parchment-800 dark:text-stone-400">
+                  Click a word in the text to see its morphological breakdown here.
+                </div>
+              )
+            )}
+          </div>
         </MobileSheet>
         <NotesList documentId={documentId} notes={pageNotes} isOwner={isOwner} onChanged={() => router.refresh()} />
       </aside>
@@ -484,16 +396,13 @@ function NoteForm({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/library/${documentId}/annotations`, {
+      await fetcher(`/api/library/${documentId}/annotations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ textUnitId, start: draft.start, end: draft.end, note, visibility }),
+        json: { textUnitId, start: draft.start, end: draft.end, note, visibility },
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Couldn't save the note");
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't save the note");
+      setError(errorMessage(e, "Couldn't save the note"));
     } finally {
       setSaving(false);
     }
@@ -553,12 +462,12 @@ function NotesList({
 
   async function remove(id: string) {
     setError(null);
-    const res = await fetch(`/api/library/${documentId}/annotations/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Couldn't delete the note");
-      return;
+    try {
+      await fetcher(`/api/library/${documentId}/annotations/${id}`, { method: "DELETE" });
+      onChanged();
+    } catch (e) {
+      setError(errorMessage(e, "Couldn't delete the note"));
     }
-    onChanged();
   }
 
   return (
