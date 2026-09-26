@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { SentenceAnalysis } from "@/types";
 import IrabWorkspace from "../IrabWorkspace";
+import { errorMessage, fetcher } from "@/constants";
 
 interface ParseResponse {
   sentence: SentenceAnalysis;
@@ -25,16 +26,9 @@ export default function FreeTextIrabInput() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch("/api/irab/parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Parsing failed");
-      setResult(body as ParseResponse);
+      setResult(await fetcher<ParseResponse>("/api/irab/parse", { method: "POST", json: { text } }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Parsing failed");
+      setError(errorMessage(err, "Parsing failed"));
     } finally {
       setBusy(false);
     }
@@ -61,7 +55,7 @@ export default function FreeTextIrabInput() {
             onChange={(e) => setText(e.target.value)}
             dir="rtl"
             placeholder={EXAMPLE}
-            className="flex-1 rounded-md border border-stone-300 bg-white px-4 py-2.5 font-arabic text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-stone-600 dark:bg-parchment-900"
+            className="min-w-0 flex-1 rounded-md border border-stone-300 bg-white px-4 py-2.5 font-arabic text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-stone-600 dark:bg-parchment-900"
           />
           <button
             type="submit"
