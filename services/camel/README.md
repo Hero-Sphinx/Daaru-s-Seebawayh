@@ -12,6 +12,9 @@ this matters.
 cd services/camel
 python -m venv .venv
 ./.venv/Scripts/activate      # Windows; use `source .venv/bin/activate` on macOS/Linux
+# CAMeL Tools needs PyTorch but this service never uses it; the CPU build
+# skips about 5GB of NVIDIA libraries (the Dockerfile does the same).
+pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 camel_data -i morphology-db-msa-r13   # ~40MB, downloads to your CAMeL Tools data dir
 ```
