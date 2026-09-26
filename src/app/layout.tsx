@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Amiri } from "next/font/google";
 import { cookies } from "next/headers";
 import type { CSSProperties } from "react";
-import { ARABIC_SCALE_COOKIE, clampArabicScale, SESSION_COOKIE, THEME_COOKIE } from "@/constants";
+import { ARABIC_SCALE_COOKIE, clampArabicScale, THEME_COOKIE } from "@/constants";
 import { Footer, Navbar } from "@/layouts";
+import { getSessionUser } from "@/server/lib";
 import "@/styles/globals.css";
 
 const geistSans = Geist({
@@ -36,6 +37,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const isDark = cookieStore.get(THEME_COOKIE)?.value === "dark";
 
   const arabicScale = clampArabicScale(Number(cookieStore.get(ARABIC_SCALE_COOKIE)?.value ?? NaN));
+  // A real session check, not just "is there a cookie": with an expired one
+  // the login page would otherwise show the app nav and a Sign out button.
+  // Cached per request, so pages that check the session too don't pay twice.
+  const signedIn = (await getSessionUser()) !== null;
 
   return (
     <html
@@ -44,7 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       style={{ "--arabic-scale": String(arabicScale / 100) } as CSSProperties}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <Navbar initialIsDark={isDark} initialArabicScale={arabicScale} signedIn={cookieStore.has(SESSION_COOKIE)} />
+        <Navbar initialIsDark={isDark} initialArabicScale={arabicScale} signedIn={signedIn} />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
         <Footer />
       </body>
