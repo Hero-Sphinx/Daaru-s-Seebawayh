@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { ComponentType } from "react";
 import { BookIcon, DiagramIcon, type IconProps, LightbulbIcon, type PlayableQuestion, PlayIcon, QuizIcon, QuizPlayer, ScrollIcon, SlidersIcon } from "@/components";
 import { generateQuizQuestions, type QuizQuestion } from "@/helpers";
+import { fetcher, logQuizAttempt } from "@/constants";
+import type { QuizSession } from "@/types";
 
 type Topic = "vocab" | "vocab_sarf" | "irab" | "sarf" | "mixed" | "meaning";
 type Difficulty = "beginner" | "intermediate" | "advanced";
@@ -13,16 +15,6 @@ interface CenterQuestion extends PlayableQuestion {
   templateCode?: string;
   /** Fallback for questions without a template (meaning-matching). */
   topic: string;
-}
-
-function logAttempt(q: CenterQuestion, difficulty: Difficulty, isCorrect: boolean, userAnswer: string, responseTimeMs: number) {
-  fetch("/api/quiz/attempt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ templateCode: q.templateCode, topic: q.topic, difficulty, isCorrect, userAnswer, responseTimeMs }),
-  }).catch(() => {
-    // Best-effort logging — a failed write here shouldn't interrupt the quiz.
-  });
 }
 
 const TOPICS: {
@@ -64,12 +56,7 @@ async function fetchMeaningQuestions(count: number): Promise<CenterQuestion[]> {
   // falling back to the curated, human-verified sample sentences.
   let generated: QuizQuestion[] = [];
   try {
-    const res = await fetch("/api/quiz/meaning", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ count }),
-    });
-    generated = ((await res.json()).questions ?? []) as QuizQuestion[];
+    generated = (await fetcher<{ questions?: QuizQuestion[] }>("/api/quiz/meaning", { method: "POST", json: { count } })).questions ?? [];
   } catch {
     generated = [];
   }
@@ -95,15 +82,9 @@ export default function QuizCenter() {
       if (topic === "meaning") {
         generated = await fetchMeaningQuestions(count);
       } else {
-        const res = await fetch("/api/quiz/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, count, difficulty }),
-        });
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? "Couldn't build a quiz");
+        const body = await fetcher<QuizSession>("/api/quiz/session", { method: "POST", json: { topic, count, difficulty } });
         note = body.note;
-        generated = (body.questions as (PlayableQuestion & { topic: string; templateCode: string })[]).map((q) => ({ ...q, badge: q.topic }));
+        generated = body.questions.map((q) => ({ ...q, badge: q.topic }));
       }
 
       if (generated.length === 0) {
@@ -220,7 +201,7 @@ export default function QuizCenter() {
   return (
     <QuizPlayer
       questions={questions}
-      onAnswer={(q, isCorrect, chosenText, responseTimeMs) => logAttempt(q, difficulty, isCorrect, chosenText, responseTimeMs)}
+      onAnswer={(q, isCorrect, chosenText, responseTimeMs) => logQuizAttempt({ templateCode: q.templateCode, topic: q.topic, difficulty, isCorrect, userAnswer: chosenText, responseTimeMs })}
       onRestart={() => {
         setQuestions(null);
         setSetupNote(null);
