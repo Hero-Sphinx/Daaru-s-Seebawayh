@@ -3,14 +3,14 @@ import { PageBanner } from "@/layouts";
 import type { LibraryPageData } from "@/types";
 import { LibraryDocumentCard, LibrarySearch, LibraryUpload } from "./components";
 
-export default function LibraryWrapper({ documents, shared }: LibraryPageData) {
+export default function LibraryWrapper({ documents, shared, maxUploadBytes }: LibraryPageData) {
   const anyProcessing = [...documents, ...shared.map((x) => x.doc)].some((d) => d.processingStatus === "processing");
 
   return (
     <div className="space-y-6">
       <ProcessingRefresher active={anyProcessing} />
       <PageBanner tone="sky" icon={ScrollIcon} titleAr="المَكْتَبَةُ" title="Library" description="Upload your books and lessons, read them with tap-a-word morphology and i'rab, search by root, and keep notes and fawā'id.">
-        <LibraryUpload />
+        <LibraryUpload maxUploadBytes={maxUploadBytes} />
       </PageBanner>
 
       <LibrarySearch />
@@ -21,7 +21,7 @@ export default function LibraryWrapper({ documents, shared }: LibraryPageData) {
             خَيْرُ جَلِيسٍ فِي الزَّمَانِ كِتَابُ
           </p>
           <p className="mt-1 text-xs text-muted">“The best companion in any age is a book.” — al-Mutanabbī</p>
-          <p className="mt-4 text-sm text-foreground">Your shelf is empty — upload a PDF or text file above to start reading.</p>
+          <p className="mt-4 text-sm text-foreground">Your shelf is empty — upload a PDF above to start reading.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
