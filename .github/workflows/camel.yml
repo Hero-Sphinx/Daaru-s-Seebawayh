@@ -1,0 +1,75 @@
+# The CAMeL Tools service is deployed separately (Render). This builds its
+# Docker image whenever the service changes, starts it, and checks it answers
+# a real analysis, so a broken image is caught before Render deploys it.
+name: CAMeL service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/camel/**
+      - .github/workflows/camel.yml
+  pull_request:
+    paths:
+      - services/camel/**
+      - .github/workflows/camel.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: camel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    name: CAMeL image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      # The image is about 10GB (camel_tools pulls in PyTorch with its CUDA
+      # libraries), more than a runner has free by default. Remove preinstalled
+      # SDKs this job doesn't use. The image is too big for GitHub's 10GB
+      # build cache as well, so it is built from scratch each time; that only
+      # happens when services/camel changes.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+          df -h /
+
+      - name: Build image
+        run: docker build -t dsb-camel:ci services/camel
+
+      - name: Start the service
+        run: |
+          docker run -d --name camel -p 8001:8001 dsb-camel:ci
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8001/health && exit 0
+            sleep 2
+          done
+          echo "::error::The service never answered /health"
+          docker logs camel
+          exit 1
+
+      # HEAD is what uptime monitors use.
+      - name: Health answers GET and HEAD
+        run: |
+          curl -sf http://localhost:8001/health
+          curl -sfI http://localhost:8001/health
+
+      - name: Analyses a real word
+        run: |
+          body=$(curl -sf -X POST http://localhost:8001/analyze \
+            -H "Content-Type: application/json" \
+            --data-binary '{"word":"كتاب"}')
+          echo "$body" | jq .
+          echo "$body" | jq -e '[.candidates[].root] | index("ك ت ب")' > /dev/null \
+            || { echo "::error::Expected the root ك ت ب for كتاب"; exit 1; }
+
+      - name: Service logs
+        if: always()
+        run: docker logs camel || true
