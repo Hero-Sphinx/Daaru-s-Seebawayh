@@ -51,97 +51,91 @@ line between two kinds of content:
 
 ## Project structure
 
+Pages stay thin: each `app/**/page.tsx` loads its data through a server service
+and renders one `@/libs/<Name>Wrapper`. Everything else is imported through the
+top-level barrels (`@/components`, `@/layouts`, `@/libs`, `@/hooks`,
+`@/constants`, `@/helpers`, `@/types`, `@/server/lib`, `@/server/services`,
+`@/server/constants`, `@/server/databases`, `@/server/helpers`). Validators and
+server actions are imported by their full path; files inside the same area
+import each other relatively.
+
 ```
 src/
-  app/
-    page.tsx              Dashboard
-    library/page.tsx       Maktabah document list
-    library/[id]/page.tsx  Document reader
-    library/[id]/quiz/page.tsx  Book quiz
-    irab/page.tsx           I'rab Workspace
-    vocabulary/page.tsx     SRS review queue
-    quizzes/page.tsx        Quiz Center
-    quran/page.tsx          Surah index
-    quran/[chapter]/page.tsx  Word-by-word Qur'an morphology reader (paginated)
-    (auth)/login, signup     Sign-in/sign-up pages; (auth)/actions.ts = server actions
-  proxy.ts                  Optimistic auth gate (cookie present?) — Next 16's renamed middleware
-  components/
-    SiteHeader.tsx           Nav, dark-mode toggle, Arabic display font-size control
-    IrabWorkspaceContainer.tsx  Curated/custom mode toggle + sentence picker + cheat sheet
-    FreeTextIrabInput.tsx    Custom-sentence input -> POST /api/irab/parse -> IrabWorkspace
-    IrabWorkspace.tsx       Color-coded sentence + token cards + dependency tree
-    IrabCheatSheet.tsx      Static Mawqi'/Halah/'Alamah reference drawer
-    VocabularyManager.tsx    Add/bulk-import/list vocabulary, CAMeL "Auto-fill" button
-    VocabularyPractice.tsx  SM-2 flip-card practice loop
-    QuizPlayer.tsx           Shared "play a session" UI — used by both QuizCenter and
-                              BookQuizPlayer so the MCQ/scoring UI isn't duplicated
-    QuizCenter.tsx           Quiz setup (topic/difficulty/count) -> POST /api/quiz/session -> QuizPlayer
-    QuranReader.tsx          Case-coloured verse view + word card (segments, features, root family)
-    AuthForm.tsx             Shared login/signup form (useActionState)
-    BookQuizPlayer.tsx        Book quiz setup/generation -> QuizPlayer; use()+Suspense for
-                              the initial fetch (see its comments for why, not useEffect)
-    LibraryUpload.tsx        PDF upload form -> POST /api/library
-    LibraryReader.tsx        Paginated reader with click-a-word morphology lookup
-    LibrarySearch.tsx        Substring search across the user's library
-    LibrarySummary.tsx       Gemini summary/Fawa'id display + "Generate" button;
-                              always shows the "AI-generated, unverified" badge
-    icons.tsx                Small local inline-SVG icon set (no icon-font CDN)
-  lib/
-    srs/sm2.ts              SM-2 algorithm (pure, unit-tested)
-    quiz/
-      primitives.ts           Shared mulberry32/shuffle/buildOptions, used by both generators below
-      templates.ts             Authored quiz templates (data) — seeded into quiz_templates by code
-      template-types.ts        template_body contract + validator
-      template-engine.ts       Generic template interpreter (pure, unit-tested)
-      distractors.ts           Plausible-distractor selection (look-alike roots etc.)
-      sources.ts               DB -> quiz items (Qur'an words by frequency tier, vocabulary)
-      answer-labels.ts         Option labels shared by sources and templates
-      generate.ts              Curated banks (I'rab roles, wazn, sentence meaning) — pure,
-                              blended into sessions by /api/quiz/session
-      book-generate.ts         Book quiz question generation — Fawa'id-recall and I'rab-excerpt
-                              subtypes, both deterministic and unit-tested (see ROADMAP.md);
-                              the third subtype (comprehension) needs Gemini, built separately
-                              in lib/library/quiz-comprehension.ts to keep this network-free
-    vocabulary.ts            Vocabulary DTO mapping + bulk/CSV import parsing (unit-tested)
-    irab/                    Free-text I'rab parser — see ROADMAP.md's dedicated section;
-                              tokenize.ts, normalize.ts, classify.ts, particles.ts,
-                              free-text-parser.ts, all unit-tested
-    library/                 extract-pdf.ts (PDF text + NFKC normalization), snippet.ts
-                              (search result context), summarize.ts (Gemini prompt/schema/
-                              truncation), quiz-comprehension.ts (Gemini comprehension
-                              questions), book-quiz.ts (shared stored-question types) —
-                              all unit-tested except the Gemini prompt-builders' actual output
-    camel-client.ts          Shared client for the CAMeL Tools service (services/camel/)
-    gemini-client.ts          Gemini REST client with 429/503 retry-with-backoff (confirmed
-                              necessary against the real API — see ROADMAP.md) —
-                              summarization/Fawa'id/comprehension only, see the AI usage
-                              policy above
-    auth.ts                  Sessions (DB-backed, hashed tokens): getCurrentUserId() for pages,
-                              getApiUserId() for route handlers
-    password.ts              scrypt password hashing (node:crypto, no native deps)
-    quran/                   Qur'an corpus: buckwalter.ts (extended Buckwalter -> Arabic),
-                              corpus-parser.ts, chapters.ts, tagset.ts, queries.ts (reader +
-                              root family), lemma-match.ts (vocabulary -> lemma linking) —
-                              all pure parts unit-tested
-    time.ts                  Date.now()/new Date() wrappers (react-hooks/purity needs these
-                              out of component bodies, not called inline)
-    db.ts                   Prisma Client singleton (@prisma/adapter-pg)
-    data/                   Seed/reference data: grammatical-roles.ts and wazn.ts are the
-                              single source of truth shared with prisma/seed.ts
-  types/irab.ts             Token / dependency-edge types mirroring the schema
-db/schema.sql               Full PostgreSQL schema — source of truth; prisma/schema.prisma
-                              is introspected from it, never hand-edited
+  app/                        Routes only. page.tsx = auth check + service call + <XWrapper />
+    page.tsx                    Dashboard
+    (auth)/                     login, signup, forgot-password, reset-password
+    library/, library/[id]/, library/[id]/quiz/
+    irab/, vocabulary/, quizzes/, quran/, quran/[chapter]/, guide/, vision/, settings/
+    api/<domain>/               Route handlers: withAuth() + zod validator (when there is input) + service
+    error.tsx, not-found.tsx, loading.tsx
+  proxy.ts                    Optimistic auth gate (cookie present?), Next 16's renamed middleware
+  libs/                       One folder per page: <Name>Wrapper/index.tsx plus a
+                                components/ subfolder (with an index.ts barrel) for the
+                                pieces only that page uses, e.g.
+    IrabWrapper/                IrabWorkspace, FreeTextIrabInput, IrabCheatSheet, IrabReconstruction
+    VocabularyWrapper/          VocabularyManager (add, bulk/CSV import, CAMeL "Auto-fill"),
+                                VocabularyPractice (SM-2 / Leitner flip cards)
+    LibraryDocumentWrapper/     Reader with click-a-word morphology, share panel, and the
+                                summary panel (always shows the "AI-generated, unverified" badge)
+    BookQuizWrapper/            Book quiz setup/generation, plays through the shared QuizPlayer
+    shared/                     AuthForm and the password reset forms, used by several wrappers
+  layouts/                    Navbar (nav, dark mode, Arabic font size), Footer, PageBanner,
+                                StatusPage (404 / error screens)
+  components/                 Shared UI: QuizPlayer (used by the Quiz Center and book quizzes),
+                                Icons (local inline-SVG set, no icon-font CDN), MobileSheet,
+                                ProcessingRefresher
+  hooks/                      useKeyboardShortcuts, Audio/useListen, Library/useWordLookup
+  constants/                  Client-safe constants: fetcher, safeRedirect, theme cookies,
+                                password policy, and data/ (grammaticalRoles.ts and wazn.ts are
+                                the single source of truth shared with prisma/seed.ts;
+                                sampleSentences.ts, wisdom.ts)
+  helpers/                    Pure logic, all unit-tested, no DB or network:
+    srs/                        sm2.ts, leitner.ts
+    irab/                       Free-text I'rab parser (tokenize, normalize, classify, particles,
+                                freeTextParser, grammar, caseEnding, reconstruction...);
+                                see ROADMAP.md's dedicated section
+    quiz/                       primitives, templates + templateTypes + templateEngine,
+                                distractors, answerLabels, generate (curated banks),
+                                bookGenerate (Fawa'id-recall and I'rab-excerpt subtypes)
+    quran/                      buckwalter (extended Buckwalter -> Arabic), corpusParser,
+                                chapters, tagset, lemmaMatch, audio
+    arabic/, audio/, library/, vocabulary.ts, time.ts (Date wrappers kept out of
+                                component bodies for react-hooks/purity)
+  types/<domain>/             Shared TypeScript types (irab mirrors the token/edge schema)
+  server/                     Server-only code
+    lib/                        auth (DB-backed sessions, getCurrentUserId), handler (withAuth,
+                                json, readJson, error mapping), password (scrypt via
+                                node:crypto), rateLimit, email
+    constants/errors/           Typed API errors
+    databases/db.ts             Prisma Client singleton (@prisma/adapter-pg)
+    helpers/                    camelClient (CAMeL Tools service), geminiClient (REST client
+                                with 429/503 retry-with-backoff; summaries, Fawa'id and
+                                comprehension only, see the AI usage policy above)
+    services/<domain>/          Data access and business logic per domain (library, quiz,
+                                vocabulary, irab, quran, srs, speech, auth, dashboard,
+                                settings), including each page's get<Page>Page() loader.
+                                library/ holds extractPdf (NFKC normalization), summarize,
+                                quizComprehension (the one Gemini quiz subtype), rootSearch,
+                                access (the single document-permission check)
+    validators/<domain>/validate.ts   zod schemas for route bodies and queries
+    actions/                    Server actions (auth.ts, settings.ts)
+  styles/globals.css          Theme tokens (--brand, --accent...) and Tailwind layers
+  generated/prisma/           Generated Prisma Client (do not edit)
+tests/                        Mirrors src/: tests/helpers, tests/server, tests/constants,
+                                plus fixtures/ and stubs/ (server-only)
+db/schema.sql                 Full PostgreSQL schema, the source of truth; prisma/schema.prisma
+                                is introspected from it, never hand-edited
+db/migrations/                Idempotent upgrade scripts for databases created before a change
 prisma/
-  schema.prisma              Introspected from db/schema.sql (`prisma db pull`)
-  seed.ts                    Idempotent: grammatical_roles/case_signs/quiz_templates
-db/migrations/              Idempotent upgrade scripts for databases created before a change
+  schema.prisma                 Introspected from db/schema.sql (`prisma db pull`)
+  seed.ts                       Idempotent: grammatical_roles/case_signs/quiz_templates
 scripts/
-  import-quran.ts            `npm run quran:import` — corpus -> DB, one transaction, idempotent
-  set-password.ts            `npm run user:set-password` — admin password reset
+  import-quran.ts               `npm run quran:import`: corpus -> DB, one transaction, idempotent
+  set-password.ts               `npm run user:set-password`: admin password reset
 services/
-  camel/                      Self-hosted FastAPI + CAMeL Tools service (FR-4.2 enrichment);
-                              separate Python venv, run independently — see services/camel/README.md
-ROADMAP.md                  Phased implementation plan
+  camel/                        Self-hosted FastAPI + CAMeL Tools service (FR-4.2 enrichment);
+                                separate Python venv, run independently, see services/camel/README.md
+ROADMAP.md                    Phased implementation plan
 ```
 
 ## Getting started
