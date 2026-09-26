@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { MobileSheet, PlayIcon, VolumeIcon } from "@/components";
 import { describeWord, playClip, playSequence, QURAN_AUDIO_ATTRIBUTION, stopAudio, wordAudioUrl, wordTone } from "@/helpers";
 import type { QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
+import { errorMessage, fetcher } from "@/constants";
 
 const TONE_CLASS: Record<ReturnType<typeof wordTone>, string> = {
   nominative: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200",
@@ -52,13 +53,9 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
     if (!rootId || roots[rootId] || inFlight.current.has(rootId)) return;
     inFlight.current.add(rootId);
     setRoots((r) => ({ ...r, [rootId]: { status: "loading" } }));
-    fetch(`/api/quran/roots/${rootId}`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? "Failed to load root");
-        setRoots((r) => ({ ...r, [rootId]: { status: "ready", family: body as RootFamilyDTO } }));
-      })
-      .catch((e: unknown) => setRoots((r) => ({ ...r, [rootId]: { status: "error", message: e instanceof Error ? e.message : "Failed" } })))
+    fetcher<RootFamilyDTO>(`/api/quran/roots/${rootId}`)
+      .then((family) => setRoots((r) => ({ ...r, [rootId]: { status: "ready", family } })))
+      .catch((e: unknown) => setRoots((r) => ({ ...r, [rootId]: { status: "error", message: errorMessage(e, "Couldn't load the root.") } })))
       .finally(() => inFlight.current.delete(rootId));
   }
 
