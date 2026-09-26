@@ -241,6 +241,31 @@ read-only analyzer, so a public URL is acceptable; to keep it private, run
 it on the same private network as the web app (e.g. Railway's internal
 networking) and use the internal URL.
 
+### CI/CD
+
+GitHub Actions checks every push and pull request:
+
+- **CI** (`.github/workflows/ci.yml`)
+  - *App checks*: type-check, lint, unit tests and a production build. The
+    build needs no database.
+  - *Database schema*: applies `db/schema.sql` to an empty Postgres, then
+    runs every migration over it (they must be idempotent), checks that
+    `prisma/schema.prisma` still matches the database, and runs the seed
+    twice (it must be idempotent too).
+- **CAMeL service** (`.github/workflows/camel.yml`, only when
+  `services/camel/` changes): builds the image, starts it, and checks
+  `/health` and a real `/analyze` call.
+- **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs for npm,
+  GitHub Actions, the CAMeL service's pip packages and its Docker base image.
+
+Deploys wait for those checks:
+
+- **Vercel**: Project Settings → Deployment Checks lists *App checks* and
+  *Database schema* as required. A production deployment is still built, but
+  it only goes live on the domain once both pass.
+- **Render**: the CAMeL service's auto-deploy is set to *After CI Checks
+  Pass*.
+
 ## Design system
 
 A restrained, print-inspired palette — warm paper and ink, one deep green
