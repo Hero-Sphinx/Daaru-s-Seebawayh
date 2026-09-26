@@ -18,3 +18,16 @@ export function sessionCookieOptions(expires: Date) {
 
 /** Reachable without a session. Everything else requires signing in. */
 export const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/guide", "/vision"];
+
+/**
+ * Request header the proxy uses to tell server components which page is
+ * being rendered (they can't read the URL themselves). getCurrentUserId needs
+ * it to send a stale session back to the same page after signing in.
+ */
+export const REQUEST_PATH_HEADER = "x-dsb-path";
+
+/** The login URL that returns to `path` (pathname + search) afterwards. */
+export function loginPathFor(path: string | null | undefined): string {
+  if (!path || path === "/" || !path.startsWith("/") || path.startsWith("//")) return "/login";
+  return `/login?${new URLSearchParams({ next: path })}`;
+}
