@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LightbulbIcon } from "@/components";
 import type { FawaidDTO as Fawaid } from "@/types";
+import { errorMessage, fetcher } from "@/constants";
 
 /** Each kind of benefit has its own colour, so a page of fawā'id reads at a glance. */
 const CATEGORIES: Record<string, { label: string; labelAr: string; card: string; chip: string; accent: string }> = {
@@ -74,12 +75,10 @@ export default function LibrarySummary({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/library/${documentId}/summarize`, { method: "POST" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Summarization failed");
+      await fetcher(`/api/library/${documentId}/summarize`, { method: "POST" });
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Summarization failed");
+      setError(errorMessage(err, "Summarization failed"));
     } finally {
       setBusy(false);
     }
