@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # The image is about 10GB (camel_tools pulls in PyTorch with its CUDA
       # libraries), more than a runner has free by default. Remove preinstalled
