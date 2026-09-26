@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * An error a route handler turns straight into a JSON response
  * (`{ error: message }` with this status). Anything else thrown from a route

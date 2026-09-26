@@ -284,6 +284,7 @@ CREATE TABLE tokens (
     position_in_unit            INT NOT NULL,           -- word order within the verse/sentence
     surface_form                TEXT NOT NULL,          -- as printed, with tashkeel
     surface_form_bare           TEXT,                   -- undiacritized, for search
+    translation_en              TEXT,                   -- Qur'an words: word-by-word English (Quran.com), see scripts/import-quran-translations.ts
 
     lemma_id                    BIGINT REFERENCES lemmas(id),
     root_id                     BIGINT REFERENCES roots(id),

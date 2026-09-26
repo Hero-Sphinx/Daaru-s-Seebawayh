@@ -1,3 +1,4 @@
+import "server-only";
 /** Extracts a short context window around the first match of `query` in `text`, for search results. */
 export function extractSnippet(text: string, query: string, contextChars = 60): string | null {
   const index = text.indexOf(query);

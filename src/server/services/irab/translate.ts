@@ -1,3 +1,4 @@
+import "server-only";
 import { GeminiNotConfiguredError, generateStructured } from "@/server/helpers";
 
 const TRANSLATE_SCHEMA = {

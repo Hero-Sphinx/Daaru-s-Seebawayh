@@ -28,6 +28,8 @@ export interface QuranWordDTO {
   id: string;
   position: number;
   surface: string;
+  /** Word-by-word English as it reads in this verse (Quran.com), e.g. "(of) the worlds". */
+  translationEn: string | null;
   lemma: { id: string; ar: string } | null;
   root: { id: string; letters: string } | null;
   pos: PosDTO | null;
@@ -54,5 +56,17 @@ export interface RootFamilyDTO {
   root: { id: string; letters: string };
   /** Qur'an occurrences of words from this root. */
   occurrences: number;
-  lemmas: { id: string; ar: string; pos: PosDTO | null; verbForm: number | null; occurrences: number }[];
+  lemmas: RootFamilyLemmaDTO[];
+}
+
+export interface RootFamilyLemmaDTO {
+  id: string;
+  ar: string;
+  pos: PosDTO | null;
+  verbForm: number | null;
+  occurrences: number;
+  /** The lemma's most common rendering across the Qur'an, e.g. "Lord". */
+  meaning: string | null;
+  /** Other distinct renderings, most common first, e.g. ["Sustainer"]. */
+  alternatives: string[];
 }

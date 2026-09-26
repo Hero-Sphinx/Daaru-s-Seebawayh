@@ -1,3 +1,4 @@
+import "server-only";
 export interface SummarizePage {
   pageNumber: number | null;
   text: string;

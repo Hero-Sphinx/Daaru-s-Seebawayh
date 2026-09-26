@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { MobileSheet, PlayIcon, VolumeIcon } from "@/components";
 import { describeWord, playClip, playSequence, QURAN_AUDIO_ATTRIBUTION, stopAudio, wordAudioUrl, wordTone } from "@/helpers";
-import type { QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
+import type { QuranVerseDTO, QuranWordDTO, RootFamilyDTO, RootFamilyLemmaDTO } from "@/types";
 import { errorMessage, fetcher } from "@/constants";
 
 const TONE_CLASS: Record<ReturnType<typeof wordTone>, string> = {
@@ -64,7 +64,7 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
       <div className="space-y-4">
         {audioError && <p className="text-sm text-rose-600">{audioError}</p>}
         <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-900 dark:bg-teal-950/40 dark:text-teal-200 lg:hidden">
-          Tap any word to see its root, form and grammar, and to hear it recited.
+          Tap any word to see its meaning, its root family, form and grammar, and to hear it recited.
         </p>
         <ul className="flex flex-wrap gap-2 text-xs">
           {LEGEND.map(({ tone, label }) => (
@@ -90,6 +90,7 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
                       type="button"
                       onClick={() => select(v.number, w)}
                       aria-pressed={isSelected}
+                      title={w.translationEn ?? undefined}
                       className={`rounded-md px-1 transition hover:ring-2 hover:ring-teal-400 ${TONE_CLASS[wordTone(w)]} ${
                         isSelected ? "ring-2 ring-teal-600" : ""
                       } ${isPlaying ? "underline decoration-teal-600 decoration-4 underline-offset-8" : ""}`}
@@ -125,7 +126,7 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
             <WordCard chapterId={chapterId} verse={selected.verse} word={selected.word} root={selected.word.root ? roots[selected.word.root.id] : undefined} />
           ) : (
             <div className="rounded-lg border border-dashed border-stone-300 p-6 text-sm text-stone-500 dark:border-stone-600 dark:text-stone-400">
-              Tap any word to see its root, lemma, part of speech, case or mood, and how it breaks into prefix / stem / suffix.
+              Tap any word to see what it means, the other words from its root with their meanings, its part of speech, case or mood, and how it breaks into prefix / stem / suffix.
             </div>
           )}
         </MobileSheet>
@@ -136,6 +137,7 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
 
 function WordCard({ chapterId, verse, word, root }: { chapterId: number; verse: number; word: QuranWordDTO; root: RootState | undefined }) {
   const features = describeWord(word);
+  const lemmaSense = root?.status === "ready" ? root.family.lemmas.find((l) => l.id === word.lemma?.id) : undefined;
   const [audioError, setAudioError] = useState<string | null>(null);
 
   function listen() {
@@ -155,6 +157,8 @@ function WordCard({ chapterId, verse, word, root }: { chapterId: number; verse: 
           {word.surface}
         </p>
       </div>
+
+      <WordMeaning word={word} lemma={lemmaSense} />
 
       <button
         type="button"
@@ -220,9 +224,34 @@ function WordCard({ chapterId, verse, word, root }: { chapterId: number; verse: 
       {word.root && <RootFamily state={root} currentLemmaId={word.lemma?.id ?? null} />}
 
       <p className="border-t border-stone-200 pt-3 text-[11px] leading-snug text-stone-500 dark:border-stone-700 dark:text-stone-400">
-        Source: Quranic Arabic Corpus morphology (verified annotation). {QURAN_AUDIO_ATTRIBUTION}. The corpus marks case and mood but not the
+        Source: Quranic Arabic Corpus morphology (verified annotation). Meanings: Quran.com word-by-word translation — a guide to the
+        sense, not a tafsīr. {QURAN_AUDIO_ATTRIBUTION}. The corpus marks case and mood but not the
         syntactic role (fāʿil, mafʿūl bihi…) in bulk data, so roles aren&apos;t shown rather than guessed.
       </p>
+    </div>
+  );
+}
+
+/**
+ * What the word means here, and what its dictionary word means across the
+ * whole Qur'an — so a learner meeting رَبِّكُمْ learns "Lord" for every form.
+ */
+function WordMeaning({ word, lemma }: { word: QuranWordDTO; lemma: RootFamilyLemmaDTO | undefined }) {
+  if (!word.translationEn && !lemma?.meaning) return null;
+  return (
+    <div className="space-y-1.5 rounded-lg border border-emerald-600/20 bg-emerald-50/70 px-3.5 py-3 dark:border-emerald-400/20 dark:bg-emerald-950/40">
+      {word.translationEn && (
+        <p>
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-emerald-800/70 dark:text-emerald-300/70">In this verse</span>
+          <span className="text-lg font-medium text-emerald-950 dark:text-emerald-100">{word.translationEn}</span>
+        </p>
+      )}
+      {lemma?.meaning && word.lemma && (
+        <p className="text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+          <bdi className="font-arabic text-base">{word.lemma.ar}</bdi> usually means <strong className="font-semibold">{lemma.meaning}</strong>
+          {lemma.alternatives.length > 0 && <> · also rendered {lemma.alternatives.map((a) => `“${a}”`).join(", ")}</>}
+        </p>
+      )}
     </div>
   );
 }
@@ -267,9 +296,12 @@ function RootFamily({ state, currentLemmaId }: { state: RootState | undefined; c
               l.id === currentLemmaId ? "bg-teal-50 dark:bg-teal-950" : ""
             }`}
           >
-            <span className="min-w-0 text-xs text-stone-500">
-              {l.pos?.nameEn ?? "—"}
-              {l.verbForm ? ` · Form ${ROMAN_FORMS[l.verbForm]}` : ""} · ×{l.occurrences}
+            <span className="min-w-0">
+              {l.meaning && <span className="block text-sm font-medium leading-snug text-stone-800 dark:text-stone-200">{l.meaning}</span>}
+              <span className="block text-xs text-stone-500">
+                {l.pos?.nameEn ?? "—"}
+                {l.verbForm ? ` · Form ${ROMAN_FORMS[l.verbForm]}` : ""} · ×{l.occurrences}
+              </span>
             </span>
             <bdi dir="rtl" className="shrink-0 font-arabic text-xl leading-loose">
               {l.ar}

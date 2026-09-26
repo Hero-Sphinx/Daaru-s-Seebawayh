@@ -1,3 +1,4 @@
+import "server-only";
 export * from "./dto";
 export * from "./getVocabularyPage";
 export * from "./lookupPrompt";

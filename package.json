@@ -19,9 +19,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "user:set-password": "tsx scripts/set-password.ts",
+    "user:set-password": "tsx --conditions=react-server scripts/set-password.ts",
     "quran:import": "tsx scripts/import-quran.ts",
-    "irab:record-fixtures": "tsx scripts/record-irab-fixtures.ts",
+    "quran:import-translations": "tsx scripts/import-quran-translations.ts",
+    "irab:record-fixtures": "tsx --conditions=react-server scripts/record-irab-fixtures.ts",
     "irab:accuracy": "tsx scripts/irab-accuracy.ts"
   },
   "dependencies": {

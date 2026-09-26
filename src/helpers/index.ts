@@ -29,6 +29,7 @@ export * from "./quran/audio";
 export * from "./quran/buckwalter";
 export * from "./quran/chapters";
 export * from "./quran/corpusParser";
+export * from "./quran/glosses";
 export * from "./quran/labels";
 export * from "./quran/lemmaMatch";
 export * from "./quran/tagset";

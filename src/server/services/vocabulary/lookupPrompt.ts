@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Word lookup for vocabulary entry — the user may type an Arabic word OR a
  * rough Latin transliteration (e.g. "kitab") if they don't know the script.

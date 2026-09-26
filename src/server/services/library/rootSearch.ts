@@ -1,3 +1,4 @@
+import "server-only";
 import { normalizeArabicForSearch, normalizeWithMap } from "@/helpers";
 
 /**

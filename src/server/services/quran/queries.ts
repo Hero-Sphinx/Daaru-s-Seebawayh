@@ -1,5 +1,5 @@
 import "server-only";
-import { buildLemmaIndex, type LemmaCandidate } from "@/helpers";
+import { buildLemmaIndex, summarizeGlosses, type GlossCount, type LemmaCandidate } from "@/helpers";
 import { db } from "@/server/databases";
 import type { PosDTO, QuranChapterDTO, QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
 
@@ -68,6 +68,7 @@ export async function getVerses(chapterId: number, fromVerse: number, toVerse: n
         id: t.id.toString(),
         position: t.position_in_unit,
         surface: t.surface_form,
+        translationEn: t.translation_en,
         lemma: t.lemmas ? { id: t.lemmas.id.toString(), ar: t.lemmas.lemma_ar } : null,
         root: t.roots ? { id: t.roots.id.toString(), letters: t.roots.root_letters } : null,
         pos: toPos(t.pos_tags),
@@ -92,7 +93,10 @@ export async function getVerses(chapterId: number, fromVerse: number, toVerse: n
   }));
 }
 
-/** Every lemma sharing a root, most frequent first, with Qur'an occurrence counts. */
+/**
+ * Every lemma sharing a root, most frequent first, with Qur'an occurrence
+ * counts and meanings — so one tapped word teaches the whole family.
+ */
 export async function getRootFamily(rootId: bigint): Promise<RootFamilyDTO | null> {
   const root = await db.roots.findUnique({ where: { id: rootId } });
   if (!root) return null;
@@ -104,12 +108,18 @@ export async function getRootFamily(rootId: bigint): Promise<RootFamilyDTO | nul
       orderBy: { frequency_rank: "asc" },
     }),
     db.tokens.groupBy({
-      by: ["lemma_id"],
+      by: ["lemma_id", "translation_en"],
       where: { root_id: rootId, quran_verse_id: { not: null }, parent_segment_token_id: null },
       _count: { _all: true },
     }),
   ]);
-  const countByLemma = new Map(counts.map((c) => [c.lemma_id?.toString(), c._count._all]));
+  const countByLemma = new Map<string, number>();
+  const glossesByLemma = new Map<string, GlossCount[]>();
+  for (const c of counts) {
+    const key = c.lemma_id?.toString() ?? "";
+    countByLemma.set(key, (countByLemma.get(key) ?? 0) + c._count._all);
+    if (c.translation_en) glossesByLemma.set(key, [...(glossesByLemma.get(key) ?? []), { text: c.translation_en, count: c._count._all }]);
+  }
 
   return {
     root: { id: root.id.toString(), letters: root.root_letters },
@@ -120,6 +130,7 @@ export async function getRootFamily(rootId: bigint): Promise<RootFamilyDTO | nul
       pos: toPos(l.pos_tags),
       verbForm: l.verb_forms?.form_number ?? null,
       occurrences: countByLemma.get(l.id.toString()) ?? 0,
+      ...summarizeGlosses(glossesByLemma.get(l.id.toString()) ?? []),
     })),
   };
 }

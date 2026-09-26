@@ -43,6 +43,23 @@ export async function readJson<T>(req: Request, schema: ZodType<T>): Promise<T> 
   return parseWith(schema, body);
 }
 
+/**
+ * Like readJson, for endpoints where the body is optional: an empty body is
+ * validated as `{}` (so schema defaults apply); anything else must be valid
+ * JSON that passes the schema — malformed input is a 400, never silently ignored.
+ */
+export async function readOptionalJson<T>(req: Request, schema: ZodType<T>): Promise<T> {
+  const text = await req.text();
+  if (!text.trim()) return parseWith(schema, {});
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    throw badRequest("The request body must be valid JSON.");
+  }
+  return parseWith(schema, body ?? {});
+}
+
 export function parseWith<T>(schema: ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (!result.success) {

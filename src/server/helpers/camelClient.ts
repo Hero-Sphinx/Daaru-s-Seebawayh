@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Server-only client for the self-hosted CAMeL Tools service
  * (services/camel/). Shared by the vocabulary enrichment route (FR-4.2) and

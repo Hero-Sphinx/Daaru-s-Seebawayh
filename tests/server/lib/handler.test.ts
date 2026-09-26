@@ -5,7 +5,7 @@ vi.mock("@/server/lib/auth", () => ({ getApiUserId: vi.fn() }));
 
 import { ApiError } from "@/server/constants";
 import { CamelServiceUnavailableError, GeminiNotConfiguredError, GeminiQuotaExhaustedError } from "@/server/helpers";
-import { getApiUserId, handleError, readJson, withAuth } from "@/server/lib";
+import { getApiUserId, handleError, readJson, readOptionalJson, withAuth } from "@/server/lib";
 
 const post = (body: string) => new Request("http://test/api", { method: "POST", body, headers: { "Content-Type": "application/json" } });
 
@@ -22,6 +22,23 @@ describe("readJson", () => {
 
   it("names the failing field", async () => {
     await expect(readJson(post('{"word":""}'), schema)).rejects.toMatchObject({ status: 400, message: "word: word is required" });
+  });
+});
+
+describe("readOptionalJson", () => {
+  const schema = z.object({ regenerate: z.boolean().default(false) });
+
+  it("treats an empty body as {} so defaults apply", async () => {
+    await expect(readOptionalJson(post(""), schema)).resolves.toEqual({ regenerate: false });
+  });
+
+  it("validates a body that is present", async () => {
+    await expect(readOptionalJson(post('{"regenerate":true}'), schema)).resolves.toEqual({ regenerate: true });
+    await expect(readOptionalJson(post('{"regenerate":"yes"}'), schema)).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("rejects malformed JSON instead of silently ignoring it", async () => {
+    await expect(readOptionalJson(post("{oops"), schema)).rejects.toMatchObject({ status: 400 });
   });
 });
 

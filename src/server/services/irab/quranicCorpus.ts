@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Deterministic fallback root/lemma/POS lookup for classical/Quranic
  * vocabulary that CAMeL Tools' MSA-only database doesn't cover (see the

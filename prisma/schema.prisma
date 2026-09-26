@@ -282,6 +282,7 @@ model tokens {
   position_in_unit                                        Int
   surface_form                                            String
   surface_form_bare                                       String?
+  translation_en                                          String?
   lemma_id                                                BigInt?
   root_id                                                 BigInt?
   pos_tag_id                                              Int?

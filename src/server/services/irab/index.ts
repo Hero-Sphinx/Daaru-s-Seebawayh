@@ -1,3 +1,4 @@
+import "server-only";
 export * from "./candidates";
 export * from "./parseSentence";
 export * from "./quranicCorpus";

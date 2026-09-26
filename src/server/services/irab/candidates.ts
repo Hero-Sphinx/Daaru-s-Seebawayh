@@ -1,3 +1,4 @@
+import "server-only";
 import { candidateMatchesSurface } from "@/helpers";
 import type { RawCandidate } from "@/helpers";
 import { analyzeWord } from "@/server/helpers";

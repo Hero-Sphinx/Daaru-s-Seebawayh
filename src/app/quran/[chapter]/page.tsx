@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { QuranChapterWrapper } from "@/libs";
+import { getCurrentUserId } from "@/server/lib";
 import { getChapter, getVerses, VERSES_PER_PAGE } from "@/server/services";
 
 export const dynamic = "force-dynamic";
 
 export default async function QuranChapterPage({ params, searchParams }: PageProps<"/quran/[chapter]">) {
+  await getCurrentUserId();
   const { chapter: chapterParam } = await params;
   const chapterId = Number(chapterParam);
   if (!Number.isInteger(chapterId) || chapterId < 1 || chapterId > 114) notFound();

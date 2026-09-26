@@ -1,3 +1,4 @@
+import "server-only";
 export * from "./access";
 export * from "./annotations";
 export * from "./bookQuiz";

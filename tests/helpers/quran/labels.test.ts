@@ -6,6 +6,7 @@ const base: QuranWordDTO = {
   id: "1",
   position: 1,
   surface: "",
+  translationEn: null,
   lemma: null,
   root: null,
   pos: null,

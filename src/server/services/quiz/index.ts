@@ -1,3 +1,4 @@
+import "server-only";
 export * from "./attempts";
 export * from "./generateMeaningAi";
 export * from "./session";

@@ -131,6 +131,7 @@ prisma/
   seed.ts                       Idempotent: grammatical_roles/case_signs/quiz_templates
 scripts/
   import-quran.ts               `npm run quran:import`: corpus -> DB, one transaction, idempotent
+  import-quran-translations.ts  `npm run quran:import-translations`: word-by-word English (Quran.com) -> tokens.translation_en
   set-password.ts               `npm run user:set-password`: admin password reset
 services/
   camel/                        Self-hosted FastAPI + CAMeL Tools service (FR-4.2 enrichment);
@@ -160,13 +161,14 @@ npx prisma db execute --file db/schema.sql
 npx prisma db pull && npx prisma generate
 npx prisma db seed          # lookup tables + quiz templates — required before the app will run
 npm run quran:import        # Qur'an corpus -> chapters/verses/roots/lemmas/tokens (~15s, idempotent)
+npm run quran:import-translations  # word meanings from Quran.com (~2 min, re-runnable; needs the network)
 ```
 
 **Upgrading an existing database** (created before these tables/columns
 existed): apply the numbered files in `db/migrations/` in order with
 `npx prisma db execute --file db/migrations/<file>.sql` — each is
-idempotent — then `db pull` → `generate` → `db seed` → `quran:import` as
-above. `db/schema.sql` already includes everything they add. (There are seven: `001` sessions → `007` auth hardening — login rate limiting and password-reset tokens.)
+idempotent — then `db pull` → `generate` → `db seed` → `quran:import` →
+`quran:import-translations` as above. `db/schema.sql` already includes everything they add. (`001` sessions → `007` auth hardening — login rate limiting and password-reset tokens — … → `009` Qur'an word meanings.)
 
 **Accounts.** Sign up at `/signup`; every page and API route requires a
 session (see `src/server/lib/auth.ts` and `src/proxy.ts`). Data created before
@@ -272,6 +274,33 @@ To make deploys wait for those checks:
   select *App checks* and *Database schema*. A production deployment is still
   built, but it only goes live on the domain once both pass.
 - **Render**: set the CAMeL service's Auto-Deploy to *After CI Checks Pass*.
+
+(Both are switched on for the production project.)
+
+### House rules (enforced)
+
+`tests/architecture/rules.test.ts` reads the source on every CI run, so a
+change that breaks one of these fails *App checks* and never deploys. Each
+failure names the file and the fix; an intentional exception goes in that
+rule's allowlist with its reason.
+
+- Every API route handler is `export const METHOD = withAuth(...)` (real
+  session check, validation, safe `{ error }` responses), and reads its body
+  with `readJson` / `readOptionalJson` — never raw `req.json()`.
+- Every page outside `PUBLIC_PATHS` calls `getCurrentUserId()` itself; the
+  proxy only checks that a cookie exists.
+- Every module in `src/server/` starts with `import "server-only"` (server
+  actions excepted), so importing it into browser code fails the build.
+  CLI scripts that import server code run with
+  `tsx --conditions=react-server`.
+- Browser code reaches the server only through API routes or
+  `@/server/actions`, and never reads private `process.env` values.
+- Server actions other than sign-in/sign-up/reset start with
+  `getCurrentUserId()`.
+- No `dangerouslySetInnerHTML`, `eval`, `new Function`, or
+  `$queryRawUnsafe` / `$executeRawUnsafe`.
+- No committed `.env` files or credentials (Google/Neon/Resend keys,
+  database URLs with real passwords, private keys).
 
 ## Design system
 

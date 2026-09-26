@@ -491,6 +491,13 @@ real accounts: access control, sharing, notes, search, Leitner reviews).
   parser *fully* resolves — a partial answer key would mark right answers
   wrong, so partially-parsed sentences are refused. Attempts are logged
   (`irab_reconstruction`).
+- [x] **Word meanings** — every Qur'an word carries its word-by-word English
+  (Quran.com, `npm run quran:import-translations` → `tokens.translation_en`;
+  all 77,429 words matched, a verse is only written when both sources agree
+  on its word count). The word card shows the meaning in this verse, the
+  lemma's usual meaning plus other renderings, and a meaning beside every
+  form in the root family — one tapped word teaches the whole family
+  (`src/helpers/quran/glosses.ts` distils each lemma's renderings).
 - [x] **Audio** — real recitation, not TTS, for anything Qur'anic
   (synthesized "recitation" would get tajwid wrong): word-by-word audio
   from Quran.com's CDN (`src/helpers/quran/audio.ts`; its word numbering was
