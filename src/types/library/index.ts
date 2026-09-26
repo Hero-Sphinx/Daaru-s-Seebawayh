@@ -60,6 +60,8 @@ export interface DocumentShareDTO {
 
 export interface LibraryPageData {
   documents: LibraryDocumentDTO[];
+  /** The largest PDF this deployment accepts. */
+  maxUploadBytes: number;
   shared: { doc: LibraryDocumentDTO; sharedBy: string }[];
 }
 
