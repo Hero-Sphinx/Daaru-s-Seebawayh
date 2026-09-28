@@ -7,7 +7,7 @@
 #   docker run -p 8001:8001 dsb-camel
 #
 # Then point the web app at it: CAMEL_SERVICE_URL=https://<your-host>
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
