@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { AwardIcon, BookIcon, DiagramIcon, GraduationCapIcon, MushafIcon, QuizIcon, ScrollIcon } from "@/components";
+import { AwardIcon, BookIcon, DiagramIcon, GraduationCapIcon, MushafIcon, QuizIcon, ScrollIcon, StoryIcon } from "@/components";
 import type { IconProps } from "@/components";
 import type { DashboardData } from "@/types";
 import { WisdomCard } from "./components";
@@ -54,6 +54,14 @@ const MODULES: { href: string; icon: ComponentType<IconProps>; title: string; ti
     title: "Qur'an",
     titleAr: "القُرْآن",
     description: "Read with word-by-word morphology and recitation from the Quranic Arabic Corpus.",
+  },
+  {
+    href: "/stories",
+    tint: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+    icon: StoryIcon,
+    title: "Stories",
+    titleAr: "القِصَص",
+    description: "Simple vowelled stories for children and beginners — think before you tap.",
   },
   {
     href: "/library",

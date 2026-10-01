@@ -5,4 +5,5 @@ export * from "./library";
 export * from "./quiz";
 export * from "./quran";
 export * from "./settings";
+export * from "./stories";
 export * from "./vocabulary";

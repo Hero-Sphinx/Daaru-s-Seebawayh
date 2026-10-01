@@ -12,5 +12,7 @@ export { default as QuranWrapper } from "./QuranWrapper";
 export { default as ResetPasswordWrapper } from "./ResetPasswordWrapper";
 export { default as SettingsWrapper } from "./SettingsWrapper";
 export { default as SignupWrapper } from "./SignupWrapper";
+export { default as StoriesWrapper } from "./StoriesWrapper";
+export { default as StoryWrapper } from "./StoryWrapper";
 export { default as VisionWrapper } from "./VisionWrapper";
 export { default as VocabularyWrapper } from "./VocabularyWrapper";

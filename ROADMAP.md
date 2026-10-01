@@ -576,3 +576,31 @@ bugs changed.
 `next build` passes, every API route checked against a real Postgres, and
 a browser pass through signup, vocabulary, library upload and reading,
 quizzes, Qur'an, dark mode and phone width with no console errors.
+
+## Stories (قِصَص) — done
+
+Graded reading for children and beginners, suggested after launch.
+
+- [x] **Six stories, three levels**, fully vowelled, each with a small lesson in
+  adab: the little cat and the red apple (Level 1); the honest boy and the
+  ant and the dove (Level 2); visiting a sick neighbour and Friday
+  (Level 3). Content lives in `src/constants/data/stories.ts`, so a new
+  story is a pull request that CI checks.
+- [x] **Think before you tap**: tapping a word first asks the reader to
+  think ("we often know more than we think 😉"), then offers *I've got it!*,
+  a hint (the root plus a clue that doesn't give the answer away), or
+  *Show me*. Readers can switch the nudge off. Words worked out are
+  underlined green and words looked up dotted amber, with counts below
+  the story. This is retrieval practice, not decoration.
+- [x] **No AI at reading time**: every word's meaning, dictionary form,
+  root and hint is written in advance, so a tap is instant and free.
+  `tests/constants/data/stories.test.ts` fails if any word in a story lacks
+  an entry, if an entry is unused or duplicated, or if a part read aloud
+  wouldn't pass the pronunciation endpoint's validator.
+- [x] **Links to the rest of the app**: *Add to my vocabulary* (the word as it
+  appears, its meaning, its root and the sentence as an example), words
+  already in the bank are marked, ▶ reads each paragraph aloud (cached
+  speech, falling back to the device voice), and comprehension questions
+  follow the story.
+- [ ] Arabic review of the stories by a fluent reader before wide sharing.
+- [ ] Illustrations; a way to add stories without a deploy.

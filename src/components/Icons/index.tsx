@@ -35,6 +35,15 @@ export const MushafIcon = base(
   </>
 );
 
+// A storybook with a little sparkle — the graded reading stories.
+export const StoryIcon = base(
+  <>
+    <path d="M4 4h9a3 3 0 0 1 3 3v14H7a3 3 0 0 1-3-3V4Z" />
+    <path d="M4 18a3 3 0 0 1 3-3h9" />
+    <path d="M19.5 2.5 20.2 4l1.5.7-1.5.6-.7 1.6-.6-1.6-1.5-.6 1.5-.7.6-1.5Z" />
+  </>
+);
+
 export const DiagramIcon = base(
   <>
     <rect x="9" y="3" width="6" height="4" rx="1" />

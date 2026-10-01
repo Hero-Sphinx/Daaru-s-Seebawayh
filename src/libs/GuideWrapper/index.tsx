@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
-import { BookIcon, DiagramIcon, type IconProps, LightbulbIcon, MushafIcon, QuizIcon, ScrollIcon } from "@/components";
+import { BookIcon, DiagramIcon, type IconProps, LightbulbIcon, MushafIcon, QuizIcon, ScrollIcon, StoryIcon } from "@/components";
 
 const CARD = "rounded-2xl border border-border bg-surface p-5 shadow-sm";
 
@@ -205,6 +205,20 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
             ]}
           >
             Read the Qur&apos;an word by word, with morphology and recitation.
+          </Feature>
+          <Feature
+            icon={StoryIcon}
+            tint="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+            title="Stories"
+            titleAr="القِصَص"
+            href="/stories"
+            steps={[
+              "Pick a story at your level — Level 1 is very simple, Level 3 has dialogue.",
+              "Tap a word you don't know. The app first asks you to think 😉 — press “I've got it!”, ask for a hint (its root and a clue), or “Show me”.",
+              "Add words you needed to your vocabulary in one tap, press ▶ to hear each part read aloud, and answer the questions at the end.",
+            ]}
+          >
+            Short, fully vowelled stories in simple Arabic — for children and beginners.
           </Feature>
           <Feature
             icon={ScrollIcon}

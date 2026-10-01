@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, SunIcon } from "@/components";
+import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, StoryIcon, SunIcon } from "@/components";
 import { ARABIC_SCALE_COOKIE, ARABIC_SCALE_STEP, clampArabicScale, FULL_NAME_AR, FULL_NAME_EN, MAX_ARABIC_SCALE, MIN_ARABIC_SCALE, setPrefCookie, THEME_COOKIE } from "@/constants";
 import { logout } from "@/server/actions/auth";
 
@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/vocabulary", label: "Vocabulary", icon: BookIcon },
   { href: "/irab", label: "I'rab", icon: DiagramIcon },
   { href: "/quran", label: "Qur'an", icon: MushafIcon },
+  { href: "/stories", label: "Stories", icon: StoryIcon },
   { href: "/library", label: "Library", icon: ScrollIcon },
   { href: "/quizzes", label: "Quizzes", icon: QuizIcon },
   { href: "/guide", label: "Guide", icon: LightbulbIcon },
@@ -107,7 +108,8 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: 
     >
       {/* A thin green-and-gold line across the very top. */}
       <div aria-hidden className="h-1 bg-gradient-to-r from-emerald-700 via-teal-500 to-amber-400" />
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      {/* Wider than the page on big screens: nine sections plus the controls need the room. */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 xl:max-w-7xl">
         <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label={FULL_NAME_EN}>
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-700 to-teal-800 font-arabic text-2xl leading-none text-amber-300 shadow-md shadow-emerald-800/30 ring-2 ring-amber-300/40 transition group-hover:scale-105">
             س
@@ -140,7 +142,7 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: 
         )}
 
         {signedIn && (
-          <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          <nav aria-label="Main" className="hidden items-center gap-1 xl:flex">
             {NAV_LINKS.map(({ href, label }) => {
               const active = isActive(pathname, href);
               return (
@@ -214,7 +216,7 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: 
         }`}
       >
         <div className="overflow-hidden border-t border-emerald-200/60 bg-gradient-to-r from-emerald-700/[0.06] via-transparent to-amber-400/[0.08] dark:border-emerald-900/40">
-          <div className="mx-auto flex max-w-6xl flex-col items-center gap-0.5 px-4 py-1.5 text-center sm:flex-row sm:justify-between sm:text-left sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-0.5 px-4 py-1.5 xl:max-w-7xl text-center sm:flex-row sm:justify-between sm:text-left sm:px-6">
             <p dir="rtl" lang="ar" className="font-arabic text-base leading-loose text-emerald-900 dark:text-amber-100">
               {FULL_NAME_AR}
             </p>
@@ -235,7 +237,7 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: 
       )}
 
       {signedIn && (
-        <nav aria-label="Main" className="flex gap-1.5 overflow-x-auto border-t border-emerald-200/60 px-3 py-2 dark:border-emerald-900/40 lg:hidden">
+        <nav aria-label="Main" className="flex gap-1.5 overflow-x-auto border-t border-emerald-200/60 px-3 py-2 dark:border-emerald-900/40 xl:hidden">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (

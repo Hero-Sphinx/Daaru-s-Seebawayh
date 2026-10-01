@@ -2,6 +2,7 @@ export * from "./auth";
 export * from "./data/grammaticalRoles";
 export * from "./data/sampleSentences";
 export * from "./data/wazn";
+export * from "./data/stories";
 export * from "./data/wisdom";
 export * from "./fetcher";
 export * from "./library";

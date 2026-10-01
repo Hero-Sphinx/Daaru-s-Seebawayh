@@ -33,6 +33,7 @@ export * from "./quran/glosses";
 export * from "./quran/labels";
 export * from "./quran/lemmaMatch";
 export * from "./quran/tagset";
+export * from "./stories/reader";
 export * from "./srs/leitner";
 export * from "./srs/sm2";
 export * from "./time";

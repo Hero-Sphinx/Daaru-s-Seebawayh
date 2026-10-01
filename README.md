@@ -426,6 +426,15 @@ see `src/libs/IrabWrapper/components/IrabWorkspace/index.tsx`.
 Grading a card calls the real SM-2 function (`reviewSm2`) and shows the
 computed next-due date at the end of the session — functional, not mocked.
 
+### Stories (`/stories`)
+
+Short, fully vowelled stories in three levels for children and beginners
+(`src/constants/data/stories.ts`). Tapping a word asks the reader to think
+first, then offers a hint (root + clue) before the meaning. Words can be
+added to the vocabulary bank in one tap, and each paragraph can be heard
+aloud. Every word's meaning is written in advance, with no AI at reading
+time, and `tests/constants/data/stories.test.ts` checks that none is missing.
+
 ### Quiz Center (`/quizzes`)
 
 ```

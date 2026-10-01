@@ -1,5 +1,5 @@
 import "server-only";
-import { matchLemma, SM2_DEFAULTS } from "@/helpers";
+import { matchLemma, SM2_DEFAULTS, storyWordKey } from "@/helpers";
 import { notFound } from "@/server/constants";
 import { db } from "@/server/databases";
 import type { VocabularyItemInput } from "@/server/validators/vocabulary/validate";
@@ -10,6 +10,19 @@ import { toVocabularyCardDTO, VOCAB_QUERY_INCLUDE } from "./dto";
 export async function listVocabulary(userId: string): Promise<VocabularyCardDTO[]> {
   const items = await db.vocabulary_items.findMany({ where: { user_id: userId }, include: VOCAB_QUERY_INCLUDE, orderBy: { created_at: "desc" } });
   return items.map(toVocabularyCardDTO);
+}
+
+/** The learner's words by letters (vowels ignored) — lets a reader mark words they already have. */
+export async function listVocabularyWordKeys(userId: string): Promise<string[]> {
+  const items = await db.vocabulary_items.findMany({
+    where: { user_id: userId },
+    select: { custom_word_ar: true, lemmas: { select: { lemma_ar: true } } },
+  });
+  const keys = new Set<string>();
+  for (const item of items) {
+    for (const word of [item.custom_word_ar, item.lemmas?.lemma_ar]) if (word) keys.add(storyWordKey(word));
+  }
+  return [...keys];
 }
 
 /** Adds words to the learner's bank, each with an SRS card due now. */
