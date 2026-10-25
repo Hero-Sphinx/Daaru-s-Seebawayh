@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
 import { cache } from "react";
 import { loginPathFor, REQUEST_PATH_HEADER, SESSION_COOKIE, SESSION_TTL_MS, sessionCookieOptions } from "@/constants";
+import { forbidden } from "@/server/constants";
 import { db } from "@/server/databases";
 
 /**
@@ -26,6 +27,8 @@ export interface SessionUser {
   id: string;
   email: string;
   displayName: string | null;
+  /** Can unlock class flashcard decks (/admin). */
+  isAdmin: boolean;
 }
 
 function hashToken(token: string): string {
@@ -69,7 +72,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   const session = await db.sessions.findUnique({
     where: { token_hash: hashToken(token) },
-    include: { users: { select: { id: true, email: true, display_name: true } } },
+    include: { users: { select: { id: true, email: true, display_name: true, is_admin: true } } },
   });
   if (!session) return null;
 
@@ -85,7 +88,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     await db.sessions.update({ where: { id: session.id }, data: { expires_at: new Date(now + SESSION_TTL_MS) } });
   }
 
-  return { id: session.users.id, email: session.users.email, displayName: session.users.display_name };
+  return { id: session.users.id, email: session.users.email, displayName: session.users.display_name, isAdmin: session.users.is_admin };
 });
 
 /**
@@ -108,4 +111,15 @@ export async function getCurrentUserId(): Promise<string> {
  */
 export async function getApiUserId(): Promise<string | null> {
   return (await getSessionUser())?.id ?? null;
+}
+
+/** For pages: whether the signed-in user is an admin (same cached lookup as getCurrentUserId). */
+export async function currentUserIsAdmin(): Promise<boolean> {
+  return (await getSessionUser())?.isAdmin ?? false;
+}
+
+/** For route handlers: a 403 unless this user is an admin. Read fresh from the database, not the session cache. */
+export async function requireAdmin(userId: string): Promise<void> {
+  const user = await db.users.findUnique({ where: { id: userId }, select: { is_admin: true } });
+  if (!user?.is_admin) throw forbidden("Only an admin can do that.");
 }

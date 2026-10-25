@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
-import { BookIcon, DiagramIcon, type IconProps, LightbulbIcon, MushafIcon, QuizIcon, ScrollIcon, StoryIcon } from "@/components";
+import { BookIcon, CardsIcon, DiagramIcon, type IconProps, LightbulbIcon, MushafIcon, QuizIcon, ScrollIcon, StoryIcon } from "@/components";
+import { FEEDBACK_EMAIL } from "@/constants";
 
 const CARD = "rounded-2xl border border-border bg-surface p-5 shadow-sm";
 
-const FEEDBACK_EMAIL = "daarusseebawayh@gmail.com";
 // Opens the tester's mail app with the subject and a short outline filled in.
 const FEEDBACK_MAILTO = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("Daaru-s-Seebawayh feedback")}&body=${encodeURIComponent(
   "Assalamu 'alaykum,\n\nWhat I was doing:\n\nWhat happened (please attach a screenshot):\n\nThe sentence I typed (if any):\n"
@@ -235,6 +235,21 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
             Study your own texts with the same tools.
           </Feature>
           <Feature
+            icon={CardsIcon}
+            tint="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+            title="Book flashcards"
+            titleAr="بِطَاقَاتُ المُرَاجَعَةِ"
+            href="/library/flashcards"
+            steps={[
+              "Open Library → Book flashcards and choose a book — you'll see only that book's decks, one per chapter (for Taʿẓīm al-ʿIlm, one per principle).",
+              "Pick the chapter you've covered.",
+              "Think of the answer, tap the card to see it, then press “Got it” or “Again”. Missed cards come back until you know them all.",
+              "Choose Arabic, English or both, shuffle, or practise only the cards you missed.",
+            ]}
+          >
+            Bilingual flashcards quoted from the books themselves — Taʿẓīm al-ʿIlm, and the PIK texts: Thalāthat al-Uṣūl, al-Qawāʿid al-Arbaʿ, al-ʿAqīdah al-Wāsiṭiyyah and al-Ājurrūmiyyah.
+          </Feature>
+          <Feature
             icon={QuizIcon}
             tint="bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300"
             title="Quizzes"
@@ -347,6 +362,10 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
               {FEEDBACK_EMAIL}
             </a>{" "}
             — with a screenshot and the sentence you typed. <Ar>جَزَاكُمُ اللهُ خَيْرًا</Ar>
+          </p>
+          <p className="mt-2">
+            Have a suggestion — a feature, a book you&apos;d like flashcards for, or a better way to do something? Please send it to us too, and be
+            part of this journey of ṣadaqah jāriyah.
           </p>
           <a
             href={FEEDBACK_MAILTO}

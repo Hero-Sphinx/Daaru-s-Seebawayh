@@ -25,6 +25,8 @@ CREATE TABLE users (
     timezone            TEXT DEFAULT 'UTC',
     -- Review scheduler preference (src/helpers/srs/sm2.ts | leitner.ts).
     srs_algorithm       TEXT NOT NULL DEFAULT 'sm2' CHECK (srs_algorithm IN ('sm2','leitner')),
+    -- Can unlock book flashcard decks after class (/admin). Set with `npm run user:set-admin`.
+    is_admin            BOOLEAN NOT NULL DEFAULT false,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at       TIMESTAMPTZ
 );
@@ -417,6 +419,17 @@ CREATE TABLE srs_review_log (
     reviewed_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_review_log_card ON srs_review_log (card_id, reviewed_at);
+
+-- Book flashcards (src/constants/data/flashcards/) are written in code; for a
+-- book taught in class, a deck opens to students only once an admin unlocks
+-- it after the lesson. One row per unlocked deck; locking deletes the row.
+CREATE TABLE flashcard_releases (
+    book_slug           TEXT NOT NULL,             -- FlashcardBook.slug
+    section_number      SMALLINT NOT NULL CHECK (section_number > 0),
+    released_by         UUID REFERENCES users(id) ON DELETE SET NULL,
+    released_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (book_slug, section_number)
+);
 
 -- ============================================================================
 -- 8. RULE-BASED QUIZ ENGINE

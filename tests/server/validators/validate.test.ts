@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { releaseBodySchema } from "@/server/validators/flashcards/validate";
 import { searchQuerySchema, shareBodySchema } from "@/server/validators/library/validate";
 import { attemptBodySchema, sessionBodySchema } from "@/server/validators/quiz/validate";
 import { reviewBodySchema } from "@/server/validators/srs/validate";
@@ -66,5 +67,21 @@ describe("library", () => {
 
   it("defaults the search mode to text", () => {
     expect(searchQuerySchema.parse({ q: "كتب", mode: "sideways" }).mode).toBe("text");
+  });
+});
+
+describe("flashcard releases", () => {
+  it("accepts a book, a chapter number and the new state", () => {
+    expect(releaseBodySchema.parse({ book: " tadhim-al-ilm ", section: 9, released: true })).toEqual({ book: "tadhim-al-ilm", section: 9, released: true });
+  });
+
+  it.each([
+    { book: "", section: 1, released: true },
+    { book: "x", section: 0, released: true },
+    { book: "x", section: 1.5, released: true },
+    { book: "x", section: 1, released: "yes" },
+    { book: "x", section: 1 },
+  ])("rejects %j", (body) => {
+    expect(releaseBodySchema.safeParse(body).success).toBe(false);
   });
 });

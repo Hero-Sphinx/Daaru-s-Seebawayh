@@ -168,7 +168,7 @@ npm run quran:import-translations  # word meanings from Quran.com (~2 min, re-ru
 existed): apply the numbered files in `db/migrations/` in order with
 `npx prisma db execute --file db/migrations/<file>.sql` — each is
 idempotent — then `db pull` → `generate` → `db seed` → `quran:import` →
-`quran:import-translations` as above. `db/schema.sql` already includes everything they add. (`001` sessions → `007` auth hardening — login rate limiting and password-reset tokens — … → `009` Qur'an word meanings.)
+`quran:import-translations` as above. `db/schema.sql` already includes everything they add. (`001` sessions → `007` auth hardening — login rate limiting and password-reset tokens — … → `009` Qur'an word meanings → `010` flashcard releases and admins.)
 
 **Accounts.** Sign up at `/signup`; every page and API route requires a
 session (see `src/server/lib/auth.ts` and `src/proxy.ts`). Data created before
@@ -301,6 +301,10 @@ rule's allowlist with its reason.
   `$queryRawUnsafe` / `$executeRawUnsafe`.
 - No committed `.env` files or credentials (Google/Neon/Resend keys,
   database URLs with real passwords, private keys).
+- Every response carries the baseline security headers in `next.config.ts`
+  (no framing, `nosniff`, a strict referrer policy, no camera / microphone /
+  location, HSTS) and no `X-Powered-By`; `tests/config/securityHeaders.test.ts`
+  keeps them there.
 
 ## Design system
 
@@ -434,6 +438,48 @@ first, then offers a hint (root + clue) before the meaning. Words can be
 added to the vocabulary bank in one tap, and each paragraph can be heard
 aloud. Every word's meaning is written in advance, with no AI at reading
 time, and `tests/constants/data/stories.test.ts` checks that none is missing.
+
+### Book flashcards (`/library/flashcards`)
+
+Hand-written bilingual flashcards for books students study, one deck per
+chapter, so a student practises only what they've covered. The shelf
+(`/library/flashcards`) lists each book once as “<Book> flashcards”; its page
+(`/library/flashcards/<book>`) holds only that book's decks, and each deck
+(`/library/flashcards/<book>/<chapter>`) is practised on its own. Search and
+subject filters appear once the shelf has seven or more books.
+
+A book taught in class (`releasedWithClass`, e.g. Taʿẓīm al-ʿIlm) opens its
+decks one at a time: after each lesson an admin presses *Unlock* for what was
+covered on the **Admin** tab (`/admin`, table `flashcard_releases`). Students
+see locked decks as "Opens after it's taught in class"; the page never sends
+a locked deck's cards. Admins can preview locked decks. Make an account an
+admin with:
+
+```bash
+npm run user:set-admin -- you@example.com          # add "remove" to take it away
+```
+
+The first deck is
+Shaykh al-ʿUṣaymī's *Taʿẓīm al-ʿIlm*: 20 principles, 260 cards (11–15 each)
+(`src/constants/data/flashcards/`). Every card quotes the book: the English
+translation and the vowelled Arabic of al-Madrasah ar-Raḥmāniyyah's
+bilingual edition, with the PDF page. The cards cover the key terms, lists,
+āyāt and aḥādīth (exactly as the book gives them), sayings of the salaf, and
+at least two lines of each principle's poetry. A round repeats missed cards
+until every card is known, and can be shuffled or restricted to the missed
+ones. Cards can show Arabic, English or both. Nothing is saved: rounds live in
+the page. `tests/constants/data/flashcards.test.ts` checks that every Arabic
+word is vowelled, every page sits inside its chapter, and every principle
+that quotes poetry has its lines as cards.
+
+The PIK programme's ʿaqīdah and naḥw texts follow, from the Arabic-only
+*Mutūn Ṭālib al-ʿIlm* edition (PIK classes are pre-recorded, so every deck is
+open): *Thalāthat al-Uṣūl* (12 decks, 153 cards), *al-Qawāʿid al-Arbaʿ* (5, 54),
+*al-ʿAqīdah al-Wāsiṭiyyah* (16, 247) and *al-Ājurrūmiyyah* (27 — one per bāb —
+204). The Arabic is the edition's, with its printed page numbers; the English
+is our own translation (`source.english: "ours"`), and the book and deck pages
+say so. Āyāt are copied from the `quran_verses` table in the Uthmani script
+the edition prints, so the vowelling test skips text inside ﴿ ﴾.
 
 ### Quiz Center (`/quizzes`)
 

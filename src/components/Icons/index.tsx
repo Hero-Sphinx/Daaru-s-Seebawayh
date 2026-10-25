@@ -61,6 +61,23 @@ export const ScrollIcon = base(
   </>
 );
 
+export const LockIcon = base(
+  <>
+    <rect x="5" y="11" width="14" height="10" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </>
+);
+
+export const ShieldIcon = base(<path d="M12 3 5 6v5c0 4.5 3 8.5 7 10 4-1.5 7-5.5 7-10V6l-7-3Z" />);
+
+// Two stacked cards — the book flashcards.
+export const CardsIcon = base(
+  <>
+    <rect x="3" y="7" width="13" height="14" rx="2" />
+    <path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+  </>
+);
+
 export const QuizIcon = base(
   <>
     <circle cx="12" cy="12" r="9" />

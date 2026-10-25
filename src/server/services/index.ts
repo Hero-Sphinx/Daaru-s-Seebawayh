@@ -2,6 +2,7 @@ import "server-only";
 
 export * from "./auth";
 export * from "./dashboard";
+export * from "./flashcards";
 export * from "./irab";
 export * from "./library";
 export * from "./quiz";

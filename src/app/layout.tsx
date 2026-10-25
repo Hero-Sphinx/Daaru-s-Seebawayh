@@ -40,7 +40,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // A real session check, not just "is there a cookie": with an expired one
   // the login page would otherwise show the app nav and a Sign out button.
   // Cached per request, so pages that check the session too don't pay twice.
-  const signedIn = (await getSessionUser()) !== null;
+  const user = await getSessionUser();
+  const signedIn = user !== null;
 
   return (
     <html
@@ -49,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       style={{ "--arabic-scale": String(arabicScale / 100) } as CSSProperties}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <Navbar initialIsDark={isDark} initialArabicScale={arabicScale} signedIn={signedIn} />
+        <Navbar initialIsDark={isDark} initialArabicScale={arabicScale} signedIn={signedIn} isAdmin={user?.isAdmin ?? false} />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
         <Footer />
       </body>

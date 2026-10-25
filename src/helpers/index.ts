@@ -3,6 +3,8 @@ export * from "./arabic/script";
 export * from "./audio/player";
 export * from "./audio/speech";
 export * from "./displayName";
+export * from "./flashcards/release";
+export * from "./flashcards/session";
 export * from "./irab/accuracy";
 export * from "./irab/caseEnding";
 export * from "./irab/classify";

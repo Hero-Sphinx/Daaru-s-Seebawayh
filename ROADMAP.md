@@ -604,3 +604,36 @@ Graded reading for children and beginners, suggested after launch.
   follow the story.
 - [ ] Arabic review of the stories by a fluent reader before wide sharing.
 - [ ] Illustrations; a way to add stories without a deploy.
+
+## Book flashcards (بِطَاقَاتُ المُرَاجَعَةِ) — done
+
+Requested by a tester: flashcards for the books in the Maktabah, one deck
+per chapter.
+
+- [x] **Taʿẓīm al-ʿIlm**: 20 decks (one per principle), 260 cards (11–15 each), Arabic
+  and English, quoted from the bilingual edition with its PDF page. The
+  cards are principles, terms, lists, likenesses, fill-in-the-blanks,
+  āyāt and aḥādīth, sayings, accounts of the scholars, and the poetry each
+  principle quotes (at least two cards of it per principle; principles 2, 14,
+  16, 17 and 18 quote none).
+- [x] **The PIK programme's texts** (Arabic-only *Mutūn Ṭālib al-ʿIlm*
+  edition, our English): Thalāthat al-Uṣūl (12 decks, 153 cards), al-Qawāʿid
+  al-Arbaʿ (5, 54), al-ʿAqīdah al-Wāsiṭiyyah (16, 247), al-Ājurrūmiyyah (27,
+  one per bāb, 204). All open — PIK is pre-recorded. Every āyah is copied from
+  the Qur'an table and re-checked word for word.
+- [ ] Review of the PIK decks (ḥarakāt and our English translation).
+- [x] **Per-chapter practice**: Again / Got it, missed cards come back
+  until known, shuffle, a "practise the ones I missed" round, and an
+  Arabic / English / both toggle remembered on the device.
+- [x] **Checked**: tests for vowelling, page ranges, poetry and the
+  session logic; every āyah checked against the Qur'an text in the database.
+- [ ] Review of every card by the person who requested the decks (the
+  Arabic ḥarakāt above all), and permission or credit agreed with
+  al-Madrasah ar-Raḥmāniyyah for the English translation.
+- [x] **Released with the class**: an Admin tab (admins only, `npm run
+  user:set-admin`) with Unlock / Lock per principle, so decks open as the
+  class covers them, one principle a day or one over two days. Locked decks
+  show as "after class" to students and are never sent to the browser.
+  Principles 1–9 were open when this shipped (migration `010`).
+- [ ] Spaced repetition across days (today a round lives in the page), and
+  user-made cards from highlighted passages.

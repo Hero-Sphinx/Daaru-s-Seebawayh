@@ -1,4 +1,5 @@
 export * from "./auth";
+export * from "./data/flashcards";
 export * from "./data/grammaticalRoles";
 export * from "./data/sampleSentences";
 export * from "./data/wazn";

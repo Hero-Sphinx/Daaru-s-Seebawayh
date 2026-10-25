@@ -1,5 +1,9 @@
+export { default as AdminWrapper } from "./AdminWrapper";
 export { default as BookQuizWrapper } from "./BookQuizWrapper";
 export { default as DashboardWrapper } from "./DashboardWrapper";
+export { default as FlashcardBookWrapper } from "./FlashcardBookWrapper";
+export { default as FlashcardDeckWrapper } from "./FlashcardDeckWrapper";
+export { default as FlashcardsWrapper } from "./FlashcardsWrapper";
 export { default as ForgotPasswordWrapper } from "./ForgotPasswordWrapper";
 export { default as GuideWrapper } from "./GuideWrapper";
 export { default as IrabWrapper } from "./IrabWrapper";

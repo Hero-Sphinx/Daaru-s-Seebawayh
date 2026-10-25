@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, StoryIcon, SunIcon } from "@/components";
+import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, ShieldIcon, StoryIcon, SunIcon } from "@/components";
 import { ARABIC_SCALE_COOKIE, ARABIC_SCALE_STEP, clampArabicScale, FULL_NAME_AR, FULL_NAME_EN, MAX_ARABIC_SCALE, MIN_ARABIC_SCALE, setPrefCookie, THEME_COOKIE } from "@/constants";
 import { logout } from "@/server/actions/auth";
 
@@ -19,6 +19,9 @@ const NAV_LINKS = [
   { href: "/vision", label: "Vision", icon: AwardIcon },
 ];
 
+// Only for admins (layout.tsx reads the flag from the session) — releasing class flashcards.
+const ADMIN_LINK = { href: "/admin", label: "Admin", icon: ShieldIcon };
+
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
@@ -31,6 +34,7 @@ type NavbarProps = {
   // A live session (src/app/layout.tsx checks it against the database), so a
   // stale cookie doesn't show the app nav on the login page.
   signedIn: boolean;
+  isAdmin?: boolean;
 };
 
 /**
@@ -78,7 +82,8 @@ function useNameBandVisibility(): boolean {
 const ICON_BUTTON =
   "inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200/80 bg-white/70 px-2.5 text-sm text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:border-emerald-900/60 dark:bg-white/5 dark:text-emerald-200 dark:hover:bg-emerald-950/50";
 
-export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: NavbarProps) {
+export default function Navbar({ initialIsDark, initialArabicScale, signedIn, isAdmin = false }: NavbarProps) {
+  const links = isAdmin ? [...NAV_LINKS, ADMIN_LINK] : NAV_LINKS;
   const pathname = usePathname();
   const [isDark, setIsDark] = useState(initialIsDark);
   const [scale, setScale] = useState(initialArabicScale);
@@ -143,7 +148,7 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: 
 
         {signedIn && (
           <nav aria-label="Main" className="hidden items-center gap-1 xl:flex">
-            {NAV_LINKS.map(({ href, label }) => {
+            {links.map(({ href, label }) => {
               const active = isActive(pathname, href);
               return (
                 <Link
@@ -238,7 +243,7 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn }: 
 
       {signedIn && (
         <nav aria-label="Main" className="flex gap-1.5 overflow-x-auto border-t border-emerald-200/60 px-3 py-2 dark:border-emerald-900/40 xl:hidden">
-          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+          {links.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
               <Link
