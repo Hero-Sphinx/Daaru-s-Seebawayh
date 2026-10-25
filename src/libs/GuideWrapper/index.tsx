@@ -124,7 +124,7 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
       <nav aria-label="On this page" className="flex flex-wrap gap-2 text-sm">
         {[
           ["start", "Getting started"],
-          ["features", "The five sections"],
+          ["features", "The sections"],
           ["tashkeel", "Typing harakat"],
           ["irab", "How the i'rab checker thinks"],
           ["ai", "Where AI is used"],
@@ -154,7 +154,7 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
         </div>
       </Section>
 
-      <Section id="features" title="The five sections" titleAr="الأَقْسَامُ">
+      <Section id="features" title="The sections" titleAr="الأَقْسَامُ">
         <div className="grid gap-4 md:grid-cols-2">
           <Feature
             icon={BookIcon}
@@ -202,9 +202,10 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
               "Choose a surah.",
               "Tap any word for its root, form and grammar from the Quranic Arabic Corpus, and to hear it recited.",
               "Tap a root to see where else it appears.",
+              "Tap “Tafsīr” under any āyah for a brief explanation — at-Tafsīr al-Muyassar in Arabic and al-Mukhtaṣar in English.",
             ]}
           >
-            Read the Qur&apos;an word by word, with morphology and recitation.
+            Read the Qur&apos;an word by word, with morphology, recitation and a brief tafsīr of each āyah.
           </Feature>
           <Feature
             icon={StoryIcon}
@@ -230,9 +231,16 @@ export default function GuideWrapper({ signedIn }: { signedIn: boolean }) {
               "Upload a PDF or text of a book or lesson. Scanned PDFs are read page by page in the background — you can keep using the app.",
               "Tap any word for its root and grammar; press “Show meaning” if you want an English meaning.",
               "Search your library by root, highlight passages and add notes, share a book with a friend, or generate a summary and benefits (فوائد).",
+              <>
+                <strong>Book flashcards</strong> are in the Library too: open{" "}
+                <Link href="/library/flashcards" className="text-brand hover:underline">
+                  Book flashcards
+                </Link>{" "}
+                for ready-made decks on the books students study — see below.
+              </>,
             ]}
           >
-            Study your own texts with the same tools.
+            Study your own texts with the same tools — and practise the books students study with ready-made flashcards.
           </Feature>
           <Feature
             icon={CardsIcon}

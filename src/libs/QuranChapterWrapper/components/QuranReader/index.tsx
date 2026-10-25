@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { MobileSheet, PlayIcon, VolumeIcon } from "@/components";
+import { MobileSheet, PlayIcon, ScrollIcon, VolumeIcon } from "@/components";
 import { describeWord, playClip, playSequence, QURAN_AUDIO_ATTRIBUTION, stopAudio, wordAudioUrl, wordTone } from "@/helpers";
-import type { QuranVerseDTO, QuranWordDTO, RootFamilyDTO, RootFamilyLemmaDTO } from "@/types";
+import { useLanguageChoice } from "@/hooks";
+import type { QuranTafsirDTO, QuranVerseDTO, QuranWordDTO, RootFamilyDTO, RootFamilyLemmaDTO } from "@/types";
 import { errorMessage, fetcher } from "@/constants";
+import TafsirPanel, { type TafsirState } from "../TafsirPanel";
 
 const TONE_CLASS: Record<ReturnType<typeof wordTone>, string> = {
   nominative: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200",
@@ -31,6 +33,25 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
   const [playing, setPlaying] = useState<{ verse: number; index: number } | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   const closeWord = useCallback(() => setSelected(null), []);
+  // Tafsīr: open per āyah, fetched on the first tap and kept for the page's life.
+  const [openTafsir, setOpenTafsir] = useState<Set<number>>(() => new Set());
+  const [tafsir, setTafsir] = useState<Record<number, TafsirState>>({});
+  const [tafsirLanguage, setTafsirLanguage] = useLanguageChoice("daaru.quran.tafsirLanguage");
+
+  function toggleTafsir(verse: number) {
+    const opening = !openTafsir.has(verse);
+    setOpenTafsir((s) => {
+      const next = new Set(s);
+      if (opening) next.add(verse);
+      else next.delete(verse);
+      return next;
+    });
+    if (!opening || (tafsir[verse] && tafsir[verse].status !== "error")) return;
+    setTafsir((t) => ({ ...t, [verse]: { status: "loading" } }));
+    fetcher<QuranTafsirDTO>(`/api/quran/tafsir/${chapterId}/${verse}`)
+      .then((data) => setTafsir((t) => ({ ...t, [verse]: { status: "ready", tafsir: data } })))
+      .catch((e: unknown) => setTafsir((t) => ({ ...t, [verse]: { status: "error", message: errorMessage(e, "Couldn't load the tafsīr.") } })));
+  }
 
   function playVerse(v: QuranVerseDTO) {
     if (playing?.verse === v.number) {
@@ -61,14 +82,22 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-      <div className="space-y-4">
+      {/* min-w-0: the one-line colour key mustn't widen the column (and the page) past the screen on phones. */}
+      <div className="min-w-0 space-y-4">
         {audioError && <p className="text-sm text-rose-600">{audioError}</p>}
         <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-900 dark:bg-teal-950/40 dark:text-teal-200 lg:hidden">
-          Tap any word to see its meaning, its root family, form and grammar, and to hear it recited.
+          Tap any word to see its meaning, its root family, form and grammar, and to hear it recited. Tap “Tafsīr” under an āyah for a brief explanation of it.
         </p>
-        <ul className="flex flex-wrap gap-2 text-xs">
+        {/* The colour key stays in view while reading, so nobody has to scroll back up to remember it.
+            Phones: one swipeable line at the very top (the site header slides away there).
+            Large screens: right under the header, whose height the Navbar publishes as --chrome-h
+            (it's taller below xl, where the links get their own row). */}
+        <ul
+          aria-label="Colour key"
+          className="sticky top-0 z-30 -mx-4 flex gap-2 overflow-x-auto bg-background/95 px-4 py-2 text-xs backdrop-blur [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:top-[var(--chrome-h,6.25rem)] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:rounded-lg lg:px-2"
+        >
           {LEGEND.map(({ tone, label }) => (
-            <li key={tone} className={`rounded-md px-2 py-1 ${TONE_CLASS[tone]} ${tone === "other" ? "border border-border" : ""}`}>
+            <li key={tone} className={`shrink-0 whitespace-nowrap rounded-md px-2 py-1 ${TONE_CLASS[tone]} ${tone === "other" ? "border border-border" : ""}`}>
               {label}
             </li>
           ))}
@@ -103,7 +132,15 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
                   ﴿{v.number.toLocaleString("ar-EG")}﴾
                 </span>
               </div>
-              <div className="mt-2 flex justify-end">
+              <div className="mt-2 flex flex-wrap justify-end gap-1">
+                <button
+                  type="button"
+                  onClick={() => toggleTafsir(v.number)}
+                  aria-expanded={openTafsir.has(v.number)}
+                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                >
+                  <ScrollIcon className="h-3 w-3" /> {openTafsir.has(v.number) ? "Hide tafsīr" : "Tafsīr"}
+                </button>
                 <button
                   type="button"
                   onClick={() => playVerse(v)}
@@ -112,6 +149,9 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
                   <PlayIcon className="h-3 w-3" /> {playing?.verse === v.number ? "Stop" : "Recite word by word"}
                 </button>
               </div>
+              {openTafsir.has(v.number) && tafsir[v.number] && (
+                <TafsirPanel state={tafsir[v.number]} language={tafsirLanguage} onLanguage={setTafsirLanguage} />
+              )}
             </li>
           ))}
         </ol>
@@ -119,7 +159,7 @@ export default function QuranReader({ chapterId, verses }: { chapterId: number; 
 
       {/* Sticky on wide screens, but capped to the viewport and scrollable on
           its own — a sticky panel taller than the window can never reveal its bottom. */}
-      <aside className="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pb-4">
+      <aside className="lg:sticky lg:top-[calc(var(--chrome-h,6.25rem)+0.75rem)] lg:max-h-[calc(100vh-var(--chrome-h,6.25rem)-1.5rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pb-4">
         {/* On phones this slides up from the bottom when a word is tapped; on large screens it's the side column. */}
         <MobileSheet open={selected !== null} onClose={closeWord} title="Word details">
           {selected ? (

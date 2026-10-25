@@ -211,14 +211,16 @@ model quran_chapters {
 }
 
 model quran_verses {
-  id             BigInt         @id @default(autoincrement())
-  chapter_id     Int            @db.SmallInt
-  verse_number   Int            @db.SmallInt
-  text_uthmani   String
-  text_simple    String?
-  fawaid         fawaid[]
-  quran_chapters quran_chapters @relation(fields: [chapter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tokens         tokens[]
+  id                  BigInt         @id @default(autoincrement())
+  chapter_id          Int            @db.SmallInt
+  verse_number        Int            @db.SmallInt
+  text_uthmani        String
+  text_simple         String?
+  tafsir_muyassar_ar  String?
+  tafsir_mukhtasar_en String?
+  fawaid              fawaid[]
+  quran_chapters      quran_chapters @relation(fields: [chapter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tokens              tokens[]
 
   @@unique([chapter_id, verse_number])
 }

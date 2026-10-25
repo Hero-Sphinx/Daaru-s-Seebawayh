@@ -1,7 +1,7 @@
 import "server-only";
 import { buildLemmaIndex, summarizeGlosses, type GlossCount, type LemmaCandidate } from "@/helpers";
 import { db } from "@/server/databases";
-import type { PosDTO, QuranChapterDTO, QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
+import type { PosDTO, QuranChapterDTO, QuranTafsirDTO, QuranVerseDTO, QuranWordDTO, RootFamilyDTO } from "@/types";
 
 /** Verses per reader page — keeps long surahs (al-Baqarah: 286 verses, ~6k words) to a sane payload. */
 export const VERSES_PER_PAGE = 30;
@@ -187,4 +187,14 @@ export async function getLemmaOccurrences(lemmaIds: bigint[]): Promise<Map<strin
       { chapter: r.chapter_id, verse: r.verse_number, word: r.position_in_unit, surface: r.surface_form },
     ])
   );
+}
+
+/** One āyah's brief tafsīr, or null if the āyah doesn't exist or hasn't been imported (npm run quran:import-tafsir). */
+export async function getVerseTafsir(chapterId: number, verseNumber: number): Promise<QuranTafsirDTO | null> {
+  const v = await db.quran_verses.findUnique({
+    where: { chapter_id_verse_number: { chapter_id: chapterId, verse_number: verseNumber } },
+    select: { tafsir_muyassar_ar: true, tafsir_mukhtasar_en: true },
+  });
+  if (!v?.tafsir_muyassar_ar || !v.tafsir_mukhtasar_en) return null;
+  return { chapter: chapterId, verse: verseNumber, muyassarAr: v.tafsir_muyassar_ar, mukhtasarEn: v.tafsir_mukhtasar_en };
 }

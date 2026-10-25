@@ -52,6 +52,16 @@ export interface QuranVerseDTO {
   words: QuranWordDTO[];
 }
 
+/** Brief tafsīr of one āyah (from QuranEnc.com), loaded when the reader taps “Tafsīr”. */
+export interface QuranTafsirDTO {
+  chapter: number;
+  verse: number;
+  /** at-Tafsīr al-Muyassar, Arabic. */
+  muyassarAr: string;
+  /** al-Mukhtaṣar fī Tafsīr al-Qurʾān, English. */
+  mukhtasarEn: string;
+}
+
 export interface RootFamilyDTO {
   root: { id: string; letters: string };
   /** Qur'an occurrences of words from this root. */

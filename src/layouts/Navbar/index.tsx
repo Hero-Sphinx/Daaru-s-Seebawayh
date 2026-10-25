@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AwardIcon, BookIcon, DiagramIcon, HouseIcon, LightbulbIcon, MoonIcon, MushafIcon, QuizIcon, ScrollIcon, ShieldIcon, StoryIcon, SunIcon } from "@/components";
 import { ARABIC_SCALE_COOKIE, ARABIC_SCALE_STEP, clampArabicScale, FULL_NAME_AR, FULL_NAME_EN, MAX_ARABIC_SCALE, MIN_ARABIC_SCALE, setPrefCookie, THEME_COOKIE } from "@/constants";
 import { logout } from "@/server/actions/auth";
@@ -79,6 +79,26 @@ function useNameBandVisibility(): boolean {
   return visible;
 }
 
+/**
+ * Publishes the header's current height as the CSS variable --chrome-h, so
+ * things that stick below it (the Qur'an colour key, the word panel) sit right
+ * under it. Its height changes with the screen width (the second row of links
+ * below xl) and while the name band folds, so a fixed number can't be right.
+ */
+function usePublishHeight(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => root.style.setProperty("--chrome-h", `${el.offsetHeight}px`));
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--chrome-h");
+    };
+  }, [ref]);
+}
+
 const ICON_BUTTON =
   "inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200/80 bg-white/70 px-2.5 text-sm text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:border-emerald-900/60 dark:bg-white/5 dark:text-emerald-200 dark:hover:bg-emerald-950/50";
 
@@ -90,6 +110,8 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn, is
   // Scrolling down: on phones the whole header slides away (it's tall there); on
   // large screens only the name band folds. Scrolling up brings it all back.
   const chromeVisible = useNameBandVisibility();
+  const headerRef = useRef<HTMLElement>(null);
+  usePublishHeight(headerRef);
 
   function toggleDarkMode() {
     const next = !isDark;
@@ -107,6 +129,7 @@ export default function Navbar({ initialIsDark, initialArabicScale, signedIn, is
 
   return (
     <header
+      ref={headerRef}
       className={`site-chrome sticky top-0 z-40 border-b border-emerald-200/70 bg-gradient-to-r from-emerald-50/95 via-white/95 to-amber-50/95 shadow-sm backdrop-blur transition-[transform,opacity] duration-500 ease-in-out will-change-transform motion-reduce:transition-none dark:border-emerald-900/50 dark:from-emerald-950/90 dark:via-parchment-800/95 dark:to-teal-950/80 ${
         chromeVisible ? "" : "max-lg:-translate-y-full max-lg:opacity-0"
       }`}

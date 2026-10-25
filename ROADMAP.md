@@ -257,6 +257,17 @@ names without ة, foreign names).
 
 ## Phase 2 — Quranic Corpus integration (done, scoped — see below)
 
+- [x] **Brief tafsīr under every āyah** (suggested by a tester): a “Tafsīr”
+  button in the reader opens at-Tafsīr al-Muyassar (Arabic) and al-Mukhtaṣar
+  fī Tafsīr al-Qurʾān (English), Arabic / English / both, remembered per
+  device, with the source shown. Imported once from QuranEnc.com
+  (`npm run quran:import-tafsir`, migration 011) into `quran_verses`; an āyah is
+  only written when QuranEnc's text of it matches ours (spelling differences
+  tolerated, tested), and all 6,236 did. Never AI-generated. Loaded per āyah
+  on tap (`GET /api/quran/tafsir/[chapter]/[verse]`), so pages stay light.
+- [ ] Ibn Kathīr as an optional, longer tafsīr (Arabic is public domain; the
+  English abridgement is copyrighted — needs permission).
+
 - [x] **Import job** — `npm run quran:import` (`scripts/import-quran.ts`)
   loads the bundled Quranic Arabic Corpus morphology
   (`data/quranic-corpus/`) into `quran_chapters` (114), `quran_verses`

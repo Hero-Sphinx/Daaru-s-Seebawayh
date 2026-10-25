@@ -132,6 +132,7 @@ prisma/
 scripts/
   import-quran.ts               `npm run quran:import`: corpus -> DB, one transaction, idempotent
   import-quran-translations.ts  `npm run quran:import-translations`: word-by-word English (Quran.com) -> tokens.translation_en
+  import-quran-tafsir.ts        `npm run quran:import-tafsir`: brief tafsīr (QuranEnc: al-Muyassar, al-Mukhtaṣar) -> quran_verses
   set-password.ts               `npm run user:set-password`: admin password reset
 services/
   camel/                        Self-hosted FastAPI + CAMeL Tools service (FR-4.2 enrichment);
@@ -162,13 +163,14 @@ npx prisma db pull && npx prisma generate
 npx prisma db seed          # lookup tables + quiz templates — required before the app will run
 npm run quran:import        # Qur'an corpus -> chapters/verses/roots/lemmas/tokens (~15s, idempotent)
 npm run quran:import-translations  # word meanings from Quran.com (~2 min, re-runnable; needs the network)
+npm run quran:import-tafsir        # brief tafsīr of every āyah from QuranEnc (~2 min, re-runnable; `-- check` writes nothing)
 ```
 
 **Upgrading an existing database** (created before these tables/columns
 existed): apply the numbered files in `db/migrations/` in order with
 `npx prisma db execute --file db/migrations/<file>.sql` — each is
 idempotent — then `db pull` → `generate` → `db seed` → `quran:import` →
-`quran:import-translations` as above. `db/schema.sql` already includes everything they add. (`001` sessions → `007` auth hardening — login rate limiting and password-reset tokens — … → `009` Qur'an word meanings → `010` flashcard releases and admins.)
+`quran:import-translations` → `quran:import-tafsir` as above. `db/schema.sql` already includes everything they add. (`001` sessions → `007` auth hardening — login rate limiting and password-reset tokens — … → `009` Qur'an word meanings → `010` flashcard releases and admins → `011` Qur'an tafsīr.)
 
 **Accounts.** Sign up at `/signup`; every page and API route requires a
 session (see `src/server/lib/auth.ts` and `src/proxy.ts`). Data created before

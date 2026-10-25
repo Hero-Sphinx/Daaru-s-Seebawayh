@@ -166,6 +166,10 @@ CREATE TABLE quran_verses (
     verse_number        SMALLINT NOT NULL,
     text_uthmani        TEXT NOT NULL,
     text_simple         TEXT,
+    -- Brief tafsīr from QuranEnc.com (scripts/import-quran-tafsir.ts):
+    -- at-Tafsīr al-Muyassar in Arabic, al-Mukhtaṣar in English.
+    tafsir_muyassar_ar  TEXT,
+    tafsir_mukhtasar_en TEXT,
     UNIQUE (chapter_id, verse_number)
 );
 

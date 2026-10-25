@@ -34,6 +34,7 @@ export * from "./quran/corpusParser";
 export * from "./quran/glosses";
 export * from "./quran/labels";
 export * from "./quran/lemmaMatch";
+export * from "./quran/tafsir";
 export * from "./quran/tagset";
 export * from "./stories/reader";
 export * from "./srs/leitner";

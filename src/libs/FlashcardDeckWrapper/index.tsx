@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { ArrowRightIcon, ChevronLeftIcon, LockIcon, ShieldIcon } from "@/components";
 import { answerCard, firstTryCount, isSessionDone, shuffledIndices, startSession } from "@/helpers";
-import { useKeyboardShortcuts } from "@/hooks";
+import { useKeyboardShortcuts, useLanguageChoice } from "@/hooks";
 import type { BilingualText, FlashcardBook, FlashcardKind, FlashcardSection } from "@/types";
 import { type CardLanguage, FlashcardFace } from "./components";
 
@@ -28,35 +28,8 @@ const LANGUAGES: { value: CardLanguage; label: string }[] = [
   { value: "en", label: "English" },
 ];
 
-// Per-device preference: which language the cards show. Kept in localStorage
-// (a convenience, not data), read through useSyncExternalStore so the server
-// render and the first client render agree on "both".
+// Which language the cards show, remembered on this device.
 const LANGUAGE_KEY = "daaru.flashcards.language";
-const languageListeners = new Set<() => void>();
-
-function readLanguage(): CardLanguage {
-  try {
-    const v = localStorage.getItem(LANGUAGE_KEY);
-    return v === "ar" || v === "en" ? v : "both";
-  } catch {
-    return "both";
-  }
-}
-
-function writeLanguage(language: CardLanguage) {
-  try {
-    if (language === "both") localStorage.removeItem(LANGUAGE_KEY);
-    else localStorage.setItem(LANGUAGE_KEY, language);
-  } catch {
-    // Storage blocked (private mode) — the choice just won't be remembered.
-  }
-  languageListeners.forEach((l) => l());
-}
-
-function subscribeLanguage(listener: () => void) {
-  languageListeners.add(listener);
-  return () => languageListeners.delete(listener);
-}
 
 const inBookOrder = (count: number) => Array.from({ length: count }, (_, i) => i);
 
@@ -82,7 +55,7 @@ export default function FlashcardDeckWrapper({
   next?: { number: number; label: BilingualText };
   access?: DeckAccess;
 }) {
-  const language = useSyncExternalStore(subscribeLanguage, readLanguage, () => "both" as const);
+  const [language, setLanguage] = useLanguageChoice(LANGUAGE_KEY);
   const [session, setSession] = useState(() => startSession(inBookOrder(section.cards.length)));
   const [flipped, setFlipped] = useState(false);
 
@@ -152,7 +125,7 @@ export default function FlashcardDeckWrapper({
               key={l.value}
               type="button"
               aria-pressed={language === l.value}
-              onClick={() => writeLanguage(l.value)}
+              onClick={() => setLanguage(l.value)}
               className={`rounded-lg px-3 py-1.5 transition ${l.value === "ar" ? "font-arabic text-sm" : ""} ${
                 language === l.value ? "bg-emerald-700 text-white shadow-sm" : "text-muted hover:text-foreground"
               }`}

@@ -23,6 +23,7 @@
     "user:set-admin": "tsx scripts/set-admin.ts",
     "quran:import": "tsx scripts/import-quran.ts",
     "quran:import-translations": "tsx scripts/import-quran-translations.ts",
+    "quran:import-tafsir": "tsx scripts/import-quran-tafsir.ts",
     "irab:record-fixtures": "tsx --conditions=react-server scripts/record-irab-fixtures.ts",
     "irab:accuracy": "tsx scripts/irab-accuracy.ts"
   },
